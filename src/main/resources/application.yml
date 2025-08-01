@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: product-service
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show_sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: local
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  kafka:
+    listener:
+      ack-mode: manual
+    consumer:
+      group-id: product-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    properties:
+      sasl:
+        login:
+          refresh:
+            buffer:
+              seconds: 300
+            min:
+              period:
+                seconds: 60
+            window:
+              jitter: 0.05
+              factor: 0.8
+  profiles:
+    active: local
+  logging:
+    level:
+      org.springframework: INFO
+  main:
+    banner-mode: console

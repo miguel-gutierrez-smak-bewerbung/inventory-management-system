@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%magenta(%d{ISO8601}) %highlight(%-5level) [%blue(%thread)] %yellow(%C{1}): %msg%n%throwable</pattern>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="Console"/>
+    </root>
+    <springProfile name="dev">
+        <logger name="de.rewe.rese" level="info" additivity="false">
+            <appender-ref ref="Console"/>
+        </logger>
+    </springProfile>
+    <springProfile name="local">
+        <logger name="de.rewe.rese" level="debug" additivity="false">
+            <appender-ref ref="Console"/>
+        </logger>
+    </springProfile>
+</configuration>
