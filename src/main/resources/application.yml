@@ -17,6 +17,13 @@ spring:
       group-id: product-service
       auto-offset-reset: earliest
       enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     properties:
       sasl:
         login:
@@ -31,8 +38,8 @@ spring:
               factor: 0.8
   profiles:
     active: local
-  logging:
-    level:
-      org.springframework: INFO
   main:
     banner-mode: console
+logging:
+  level:
+    org.springframework: INFO

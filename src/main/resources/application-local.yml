@@ -1,6 +1,4 @@
 spring:
-  profiles:
-    active: local
   datasource:
     url: jdbc:postgresql://localhost:5432/inventory-management-system?currentSchema=local
     username: postgres
