@@ -1,8 +1,4 @@
 spring:
-  datasource:
-    url: jdbc:tc:postgresql:16:///product-management-system
-    username: postgres
-    password: postgres
   jpa:
     hibernate:
       ddl-auto: create-drop
