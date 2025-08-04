@@ -12,6 +12,6 @@ public class TestContainerConfiguration {
         return new PostgreSQLContainer<>("postgres:16-alpine")
                 .withDatabaseName("product-service")
                 .withUsername("postgres")
-                .withPassword("<PASSWORD>");
+                .withPassword("test");
     }
 }
