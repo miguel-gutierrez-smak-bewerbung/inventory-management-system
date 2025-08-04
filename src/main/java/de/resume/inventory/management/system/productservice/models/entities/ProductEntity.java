@@ -11,6 +11,8 @@ import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @Entity
 @Table(name = "products")
@@ -45,5 +47,5 @@ public class ProductEntity extends BaseEntity {
     @NotNull(message = "price must not be null")
     @DecimalMin(value = "0.0", inclusive = false, message = "price must be greater than 0")
     @Digits(integer = 10, fraction = 2, message = "price must be a valid amount with max 2 decimals")
-    private Double price;
+    private BigDecimal price;
 }

@@ -8,7 +8,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 import org.springframework.format.annotation.DateTimeFormat;
-import jakarta.validation.constraints.NotNull;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -24,13 +23,11 @@ public class BaseEntity implements Serializable {
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     @CreationTimestamp
-    @NotNull(message = "createdAt must not be null")
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
     @DateTimeFormat(pattern = "yyyy-MM-dd")
-    @NotNull(message = "updatedAt must not be null")
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }
