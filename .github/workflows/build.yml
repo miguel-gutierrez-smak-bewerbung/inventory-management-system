@@ -74,3 +74,14 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build & Test with Maven
+        run: mvn clean verify
