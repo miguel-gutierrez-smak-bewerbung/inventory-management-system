@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/inventory-management-system?currentSchema=local
+    url: jdbc:postgresql://localhost:5432/product-service?currentSchema=local
     username: postgres
     password: postgres
   kafka:
