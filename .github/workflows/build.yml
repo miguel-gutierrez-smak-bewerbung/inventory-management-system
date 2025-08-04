@@ -12,23 +12,11 @@ on:
       - develop
 
 jobs:
-  build-and-test:
-    name: Build and Test with Testcontainers
+  build:
     runs-on: ubuntu-latest
-    services:
-      docker:
-        image: docker:24.0.2-dind
-        options: --privileged --dns 8.8.8.8
+    name: Build with Maven
+
     steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Set Docker host for Testcontainers
-        run: echo "DOCKER_HOST=tcp://localhost:2375" >> $GITHUB_ENV
-
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -37,6 +25,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+
+      - name: Start Docker
+        run: |
+          sudo systemctl start docker
+          sudo docker info
 
       - name: Cache Maven packages
         uses: actions/cache@v4
@@ -54,7 +47,7 @@ jobs:
                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                     xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 
                     https://maven.apache.org/xsd/settings-1.0.0.xsd">
-          
+            
             <mirrors>
               <mirror>
                 <id>central-mirror</id>
@@ -66,5 +59,9 @@ jobs:
           </settings>
           EOF
 
-      - name: Build & Test with Maven
-        run: mvn clean verify -Dtestcontainers.reuse.enable=false
+      - name: Build & Test
+        run: mvn clean verify -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true
+        env:
+          MAVEN_OPTS: "-Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true"
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_CHECKS_DISABLE: true
