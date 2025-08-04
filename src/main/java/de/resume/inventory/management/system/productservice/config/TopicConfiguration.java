@@ -12,4 +12,5 @@ import org.springframework.context.annotation.Configuration;
 public class TopicConfiguration {
     private String productUpsert;
     private String productUpsertFail;
+    private String productUpsertRetryFail;
 }
