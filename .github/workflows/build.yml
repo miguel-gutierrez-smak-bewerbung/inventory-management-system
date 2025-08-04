@@ -30,7 +30,6 @@ jobs:
         run: |
           sudo systemctl start docker
           sudo docker info
-          sudo docker system prune -f
 
       - name: Cache Maven packages
         uses: actions/cache@v4
@@ -66,5 +65,3 @@ jobs:
           MAVEN_OPTS: "-Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true"
           TESTCONTAINERS_RYUK_DISABLED: true
           TESTCONTAINERS_CHECKS_DISABLE: true
-          TESTCONTAINERS_REUSE_ENABLE: true
-          DOCKER_HOST: unix:///var/run/docker.sock
