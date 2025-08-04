@@ -26,6 +26,11 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Start Docker
+        run: |
+          sudo systemctl start docker
+          sudo docker info
+
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
@@ -58,3 +63,5 @@ jobs:
         run: mvn clean verify -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true
         env:
           MAVEN_OPTS: "-Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true"
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_CHECKS_DISABLE: true
