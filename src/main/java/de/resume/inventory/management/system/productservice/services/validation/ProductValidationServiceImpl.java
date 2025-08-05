@@ -19,12 +19,13 @@ class ProductValidationServiceImpl implements ProductValidationService {
             throw new IllegalArgumentException(
                     String.format("Product name '%s' is already taken", productToCreateDto.name())
             );
-        }
-
-        if(!isArticleNumberAvailable(productToCreateDto.articleNumber())) {
+        } else if(!isArticleNumberAvailable(productToCreateDto.articleNumber())) {
             throw new IllegalArgumentException(
                     String.format("Article number: '%s' is already taken", productToCreateDto.articleNumber())
             );
+        } else if (productToCreateDto.price() <= 0) {
+            throw new IllegalArgumentException(
+                    String.format("price '%s' must be greater than 0", productToCreateDto.price()));
         }
     }
 

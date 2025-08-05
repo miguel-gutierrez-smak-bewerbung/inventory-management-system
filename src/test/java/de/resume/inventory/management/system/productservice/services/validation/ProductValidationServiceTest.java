@@ -97,7 +97,7 @@ class ProductValidationServiceTest {
                 IllegalArgumentException.class, () -> sut.validateProductToCreate(productToCreateDto)
         );
 
-        final String expectedMessage = "price must be greater than 0";
+        final String expectedMessage = "price '-1.0' must be greater than 0";
         final String actualMessage = illegalArgumentException.getMessage();
 
         Assertions.assertEquals(expectedMessage, actualMessage);
