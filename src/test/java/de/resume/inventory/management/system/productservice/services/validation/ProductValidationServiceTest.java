@@ -36,4 +36,26 @@ class ProductValidationServiceTest {
 
         Assertions.assertDoesNotThrow(() -> sut.validateProductToCreate(productToCreateDto));
     }
+
+    @Test
+    void validateProductToCreate_shouldThrowOnDuplicateName() {
+        final String name = "duplicateName";
+        final String articleNumber = "PRD-2024-0812";
+
+        final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,2.50
+        );
+
+        Mockito.when(productRepository.existsByName(name)).thenReturn(true);
+        Mockito.when(productRepository.existsByArticleNumber(articleNumber)).thenReturn(false);
+
+        final IllegalArgumentException illegalArgumentException = Assertions.assertThrows(
+                IllegalArgumentException.class, () -> sut.validateProductToCreate(productToCreateDto)
+        );
+
+        final String expectedMessage = String.format("Product name '%s' is already taken", name);
+        final String actualMessage = illegalArgumentException.getMessage();
+
+        Assertions.assertEquals(expectedMessage, actualMessage);
+    }
 }
