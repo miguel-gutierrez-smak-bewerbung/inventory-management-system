@@ -102,4 +102,29 @@ class ProductValidationServiceTest {
 
         Assertions.assertEquals(expectedMessage, actualMessage);
     }
+
+    @Test
+    void validateProductToCreate_shouldCollectAllValidationErrors() {
+
+        final String duplicateName = "duplicateName";
+        final String duplicateArticleNumber = "invalidArticleNumber";
+        final double negativePrice = -3.0;
+
+        final ProductToCreateDto dto = new ProductToCreateDto(
+                duplicateName, duplicateArticleNumber, null, Category.ELECTRONICS, Unit.PIECE, negativePrice
+        );
+
+        Mockito.when(productRepository.existsByName(duplicateName)).thenReturn(true);
+        Mockito.when(productRepository.existsByArticleNumber(duplicateArticleNumber)).thenReturn(true);
+
+        final ProductValidationException productValidationException = Assertions.assertThrows(
+                ProductValidationException.class,
+                () -> sut.validateProductToCreate(dto)
+        );
+
+        final String message = productValidationException.getMessage();
+        Assertions.assertTrue(message.contains("Product name 'duplicateName' is already taken"));
+        Assertions.assertTrue(message.contains("Article number: 'PRD-2024-0812' is already taken"));
+        Assertions.assertTrue(message.contains("price '-3.0' must be greater than 0"));
+    }
 }
