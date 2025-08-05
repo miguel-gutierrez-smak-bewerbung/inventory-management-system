@@ -79,4 +79,27 @@ class ProductValidationServiceTest {
 
         Assertions.assertEquals(expectedMessage, actualMessage);
     }
+
+    @Test
+    void validateProductToCreate_shouldThrowOnNegativePrice() {
+        final String name = "duplicateName";
+        final String articleNumber = "PRD-2024-0812";
+        final double negativePrice = -1.0;
+
+        final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,negativePrice
+        );
+
+        Mockito.when(productRepository.existsByName(name)).thenReturn(false);
+        Mockito.when(productRepository.existsByArticleNumber(articleNumber)).thenReturn(false);
+
+        final IllegalArgumentException illegalArgumentException = Assertions.assertThrows(
+                IllegalArgumentException.class, () -> sut.validateProductToCreate(productToCreateDto)
+        );
+
+        final String expectedMessage = "price must be greater than 0";
+        final String actualMessage = illegalArgumentException.getMessage();
+
+        Assertions.assertEquals(expectedMessage, actualMessage);
+    }
 }
