@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.SequencedCollection;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 @Service
@@ -17,32 +18,30 @@ class ProductValidationServiceImpl implements ProductValidationService {
 
     private final ProductRepository productRepository;
 
-    private record ValidationRule<T>(Predicate<T> validator, String errorMessage) {
+    private record ValidationRule<T>(Predicate<T> validator, Function<T, String> errorMessage) {
         public boolean isValid(T dto) {
             return validator.test(dto);
         }
 
-        public String getErrorMessage() {
-            return errorMessage;
+        public String getErrorMessage(T dto) {
+            return errorMessage.apply(dto);
         }
     }
 
     @Override
     public void validateProductToCreate(final ProductToCreateDto productToCreateDto) {
-        final SequencedCollection<ValidationRule<ProductToCreateDto>> rules = List.of(
+        final List<ValidationRule<ProductToCreateDto>> rules = List.of(
                 new ValidationRule<>(
-                        dto -> dto instanceof ProductToCreateDto productToCreate
-                                && isProductNameAvailable(productToCreate.name()),
-                        String.format("Product name: '%s' is already taken", productToCreateDto.name())
+                        dto -> isProductNameAvailable(dto.name()),
+                        dto -> String.format("Product name: '%s' is already taken", dto.name())
                 ),
                 new ValidationRule<>(
-                        dto -> dto instanceof ProductToCreateDto productToCreate
-                                && isArticleNumberAvailable(productToCreate.articleNumber()),
-                        String.format("Article number: '%s' is already taken", productToCreateDto.articleNumber())
+                        dto -> isArticleNumberAvailable(dto.articleNumber()),
+                        dto -> String.format("Article number: '%s' is already taken", dto.articleNumber())
                 ),
                 new ValidationRule<>(
-                        dto -> dto instanceof ProductToCreateDto productToCreate && productToCreate.price() > 0,
-                        String.format("price: '%s' must be greater than 0", productToCreateDto.price())
+                        dto -> dto.price() > 0,
+                        dto -> String.format("price: '%s' must be greater than 0", dto.price())
                 )
         );
         validateWithRules(productToCreateDto, rules);
@@ -50,7 +49,21 @@ class ProductValidationServiceImpl implements ProductValidationService {
 
     @Override
     public void validateProductToUpdate(final ProductToUpdateDto productToUpdateDto) {
-
+        final List<ValidationRule<ProductToUpdateDto>> rules = List.of(
+                new ValidationRule<>(
+                        dto -> isProductNameAvailable(dto.name()),
+                        dto -> String.format("Product name: '%s' is already taken", dto.name())
+                ),
+                new ValidationRule<>(
+                        dto -> isArticleNumberAvailable(dto.articleNumber()),
+                        dto -> String.format("Article number: '%s' is already taken", dto.articleNumber())
+                ),
+                new ValidationRule<>(
+                        dto -> dto.price() > 0,
+                        dto -> String.format("price: '%s' must be greater than 0", dto.price())
+                )
+        );
+        validateWithRules(productToUpdateDto, rules);
     }
 
     @Override
@@ -66,7 +79,7 @@ class ProductValidationServiceImpl implements ProductValidationService {
     private <T> void validateWithRules(final T dto, final SequencedCollection<ValidationRule<T>> rules) {
         final SequencedCollection<String> errors = rules.stream()
                 .filter(rule -> !rule.isValid(dto))
-                .map(ValidationRule::getErrorMessage)
+                .map(rule -> rule.getErrorMessage(dto))
                 .toList();
 
         if (!errors.isEmpty()) {
