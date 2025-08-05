@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.SequencedCollection;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -66,10 +67,19 @@ class ProductValidationServiceImpl implements ProductValidationService {
                 new ValidationRule<>(
                         dto -> dto.price() > 0,
                         dto -> String.format("price: '%s' must be greater than 0", dto.price())
+                ),
+                new ValidationRule<>(
+                        dto -> productExistsById(dto.id()),
+                        dto -> String.format("Product with id: '%s' does not exist", dto.id())
                 )
         );
+
         validateWithRules(productToUpdateDto, rules);
         log.info("Product to update validation successful");
+    }
+
+    private boolean productExistsById(final String id) {
+        return Objects.nonNull(id) && productRepository.existsById(id);
     }
 
     @Override
