@@ -20,7 +20,7 @@ class ProductValidationServiceTest {
     private ProductRepository productRepository;
 
     @InjectMocks
-    private ProductValidationService sut;
+    private ProductValidationServiceImpl sut;
 
     @Test
     void validateProductToCreate() {
