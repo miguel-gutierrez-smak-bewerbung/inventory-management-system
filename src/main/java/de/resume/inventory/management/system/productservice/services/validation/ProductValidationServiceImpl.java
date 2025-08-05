@@ -5,6 +5,7 @@ import de.resume.inventory.management.system.productservice.models.dtos.ProductT
 import de.resume.inventory.management.system.productservice.models.dtos.ProductToUpdateDto;
 import de.resume.inventory.management.system.productservice.repositories.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.SequencedCollection;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 class ProductValidationServiceImpl implements ProductValidationService {
@@ -30,6 +32,7 @@ class ProductValidationServiceImpl implements ProductValidationService {
 
     @Override
     public void validateProductToCreate(final ProductToCreateDto productToCreateDto) {
+        log.info("Validating product to create: {}", productToCreateDto);
         final List<ValidationRule<ProductToCreateDto>> rules = List.of(
                 new ValidationRule<>(
                         dto -> isProductNameAvailable(dto.name()),
@@ -45,10 +48,12 @@ class ProductValidationServiceImpl implements ProductValidationService {
                 )
         );
         validateWithRules(productToCreateDto, rules);
+        log.info("Product to create validation successful");
     }
 
     @Override
     public void validateProductToUpdate(final ProductToUpdateDto productToUpdateDto) {
+        log.info("Validating product to update: {}", productToUpdateDto);
         final List<ValidationRule<ProductToUpdateDto>> rules = List.of(
                 new ValidationRule<>(
                         dto -> isProductNameAvailable(dto.name()),
@@ -64,6 +69,7 @@ class ProductValidationServiceImpl implements ProductValidationService {
                 )
         );
         validateWithRules(productToUpdateDto, rules);
+        log.info("Product to update validation successful");
     }
 
     @Override
