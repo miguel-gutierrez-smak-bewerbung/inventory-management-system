@@ -1,6 +1,7 @@
 package de.resume.inventory.management.system.productservice.services.validation;
 
 
+import de.resume.inventory.management.system.productservice.exceptions.ProductValidationException;
 import de.resume.inventory.management.system.productservice.models.dtos.ProductToCreateDto;
 import de.resume.inventory.management.system.productservice.models.enums.Category;
 import de.resume.inventory.management.system.productservice.models.enums.Unit;
@@ -110,7 +111,7 @@ class ProductValidationServiceTest {
         final String duplicateArticleNumber = "invalidArticleNumber";
         final double negativePrice = -3.0;
 
-        final ProductToCreateDto dto = new ProductToCreateDto(
+        final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
                 duplicateName, duplicateArticleNumber, null, Category.ELECTRONICS, Unit.PIECE, negativePrice
         );
 
@@ -118,8 +119,7 @@ class ProductValidationServiceTest {
         Mockito.when(productRepository.existsByArticleNumber(duplicateArticleNumber)).thenReturn(true);
 
         final ProductValidationException productValidationException = Assertions.assertThrows(
-                ProductValidationException.class,
-                () -> sut.validateProductToCreate(dto)
+                ProductValidationException.class, () -> sut.validateProductToCreate(productToCreateDto)
         );
 
         final String actualMessage = productValidationException.getMessage();
