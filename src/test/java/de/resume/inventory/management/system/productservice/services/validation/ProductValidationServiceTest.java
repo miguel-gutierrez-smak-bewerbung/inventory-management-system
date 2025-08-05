@@ -122,9 +122,9 @@ class ProductValidationServiceTest {
                 () -> sut.validateProductToCreate(dto)
         );
 
-        final String message = productValidationException.getMessage();
-        Assertions.assertTrue(message.contains("Product name 'duplicateName' is already taken"));
-        Assertions.assertTrue(message.contains("Article number: 'PRD-2024-0812' is already taken"));
-        Assertions.assertTrue(message.contains("price '-3.0' must be greater than 0"));
+        final String actualMessage = productValidationException.getMessage();
+        final String expectedMessage = "Product name 'duplicateName' is already taken, Article number: 'invalidArticleNumber' " +
+                "is already taken, price '-3.0' must be greater than 0";
+        Assertions.assertEquals(expectedMessage, actualMessage);
     }
 }
