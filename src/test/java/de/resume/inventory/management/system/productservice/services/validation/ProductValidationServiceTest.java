@@ -49,12 +49,12 @@ class ProductValidationServiceTest {
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(true);
 
-        final IllegalArgumentException illegalArgumentException = Assertions.assertThrows(
-                IllegalArgumentException.class, () -> sut.validateProductToCreate(productToCreateDto)
+        final ProductValidationException productValidationException = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToCreate(productToCreateDto)
         );
 
-        final String expectedMessage = String.format("Product name '%s' is already taken", name);
-        final String actualMessage = illegalArgumentException.getMessage();
+        final String expectedMessage = String.format("Product name: '%s' is already taken", name);
+        final String actualMessage = productValidationException.getMessage();
 
         Assertions.assertEquals(expectedMessage, actualMessage);
     }
@@ -71,12 +71,12 @@ class ProductValidationServiceTest {
         Mockito.when(productRepository.existsByName(name)).thenReturn(false);
         Mockito.when(productRepository.existsByArticleNumber(articleNumber)).thenReturn(true);
 
-        final IllegalArgumentException illegalArgumentException = Assertions.assertThrows(
-                IllegalArgumentException.class, () -> sut.validateProductToCreate(productToCreateDto)
+        final ProductValidationException productValidationException  = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToCreate(productToCreateDto)
         );
 
         final String expectedMessage = "Article number: 'PRD-2024-0812' is already taken";
-        final String actualMessage = illegalArgumentException.getMessage();
+        final String actualMessage = productValidationException.getMessage();
 
         Assertions.assertEquals(expectedMessage, actualMessage);
     }
@@ -94,12 +94,12 @@ class ProductValidationServiceTest {
         Mockito.when(productRepository.existsByName(name)).thenReturn(false);
         Mockito.when(productRepository.existsByArticleNumber(articleNumber)).thenReturn(false);
 
-        final IllegalArgumentException illegalArgumentException = Assertions.assertThrows(
-                IllegalArgumentException.class, () -> sut.validateProductToCreate(productToCreateDto)
+        final ProductValidationException productValidationException = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToCreate(productToCreateDto)
         );
 
-        final String expectedMessage = "price '-1.0' must be greater than 0";
-        final String actualMessage = illegalArgumentException.getMessage();
+        final String expectedMessage = "price: '-1.0' must be greater than 0";
+        final String actualMessage = productValidationException.getMessage();
 
         Assertions.assertEquals(expectedMessage, actualMessage);
     }
@@ -123,8 +123,8 @@ class ProductValidationServiceTest {
         );
 
         final String actualMessage = productValidationException.getMessage();
-        final String expectedMessage = "Product name 'duplicateName' is already taken, Article number: 'invalidArticleNumber' " +
-                "is already taken, price '-3.0' must be greater than 0";
+        final String expectedMessage = "Product name: 'duplicateName' is already taken, Article number: 'invalidArticleNumber' " +
+                "is already taken, price: '-3.0' must be greater than 0";
         Assertions.assertEquals(expectedMessage, actualMessage);
     }
 }
