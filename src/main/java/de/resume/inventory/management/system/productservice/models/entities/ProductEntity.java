@@ -8,14 +8,15 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Data
 @Entity
 @Table(name = "products")
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class ProductEntity extends BaseEntity {
 
@@ -49,3 +50,4 @@ public class ProductEntity extends BaseEntity {
     @Digits(integer = 10, fraction = 2, message = "price must be a valid amount with max 2 decimals")
     private BigDecimal price;
 }
+
