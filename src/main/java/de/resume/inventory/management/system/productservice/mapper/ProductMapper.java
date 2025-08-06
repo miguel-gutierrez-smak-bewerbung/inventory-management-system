@@ -12,7 +12,6 @@ public interface ProductMapper {
 
     ProductEntity toEntity(final ProductToCreateDto dto);
 
-    @Mapping(target = "id", source = "id")
     ProductEntity toEntity(final ProductToUpdateDto dto);
 
     @Mapping(target = "timestamp", source = "updatedAt")
