@@ -113,7 +113,13 @@ class ProductEventPublisherImplTest {
         Mockito.when(topicConfiguration.getProductUpsert()).thenReturn(TOPIC);
         Mockito.when(topicConfiguration.getProductUpsertFail()).thenReturn(FAIL_TOPIC);
 
-        Mockito.doThrow(new RuntimeException("Non-retryable")).when(kafkaProducer).send(any());
+        Mockito.doThrow(new RuntimeException("Non-retryable")).when(kafkaProducer).send(
+            Mockito.argThat(record ->
+                record.topic().equals(FAIL_TOPIC)
+                && record.key().equals(kafkaKey)
+                && record.value().equals(event)
+            )
+        );
 
         sut.publishProductUpserted(kafkaKey, event);
 
