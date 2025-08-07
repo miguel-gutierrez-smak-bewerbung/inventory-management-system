@@ -110,14 +110,12 @@ class ProductEventPublisherImplTest {
         );
         final ArgumentCaptor<ProducerRecord<String, ProductUpsertedEvent>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
 
-
         Mockito.when(topicConfiguration.getProductUpsert()).thenReturn(TOPIC);
         Mockito.when(topicConfiguration.getProductUpsertFail()).thenReturn(FAIL_TOPIC);
 
         Mockito.doThrow(new RuntimeException("Non-retryable")).when(kafkaProducer).send(any());
 
         sut.publishProductUpserted(kafkaKey, event);
-
 
         Mockito.verify(kafkaProducer, Mockito.atLeast(2)).send(captor.capture());
 
