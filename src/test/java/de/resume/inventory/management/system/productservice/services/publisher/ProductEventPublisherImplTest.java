@@ -1,6 +1,5 @@
 package de.resume.inventory.management.system.productservice.services.publisher;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 
 import de.resume.inventory.management.system.productservice.config.TopicConfiguration;
