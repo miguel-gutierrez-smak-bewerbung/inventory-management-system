@@ -6,7 +6,7 @@ import de.resume.inventory.management.system.productservice.models.enums.Product
 
 import java.time.LocalDateTime;
 
-public record ProductUpsertedMessage(
+public record ProductUpsertedEvent(
 
         @JsonProperty("id")
         String id,
