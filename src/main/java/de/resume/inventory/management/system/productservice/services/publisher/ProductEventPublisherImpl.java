@@ -23,6 +23,7 @@ class ProductEventPublisherImpl implements ProductEventPublisher {
 
     @Override
     public void publishProductUpserted(final String kafkaKey, final ProductUpsertedEvent productUpsertedEvent) {
+        log.debug("Publishing product upserted event: {}", productUpsertedEvent);
         try {
             sendMessageToKafka(kafkaKey, productUpsertedEvent);
         } catch (final Exception exception) {
