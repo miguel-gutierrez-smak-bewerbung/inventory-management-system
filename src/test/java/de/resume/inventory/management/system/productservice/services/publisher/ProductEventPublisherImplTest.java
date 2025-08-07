@@ -1,7 +1,7 @@
 package de.resume.inventory.management.system.productservice.services.publisher;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
 
 import de.resume.inventory.management.system.productservice.config.TopicConfiguration;
 import de.resume.inventory.management.system.productservice.models.enums.ProductAction;
@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.Future;
 
 @ExtendWith(MockitoExtension.class)
 class ProductEventPublisherImplTest {
@@ -70,21 +71,30 @@ class ProductEventPublisherImplTest {
         );
         final ArgumentCaptor<ProducerRecord<String, ProductUpsertedEvent>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
 
+        final ProducerRecord<String, ProductUpsertedEvent> retryRecord =
+                new ProducerRecord<>(RETRY_TOPIC, kafkaKey, event);
+        final ProducerRecord<String, ProductUpsertedEvent> failRecord =
+                new ProducerRecord<>(FAIL_TOPIC, kafkaKey, event);
+
+        Mockito.when(kafkaProducer.send(Mockito.eq(retryRecord)))
+               .thenThrow(new RuntimeException("Retryable"));
+
+        Mockito.when(kafkaProducer.send(Mockito.eq(failRecord)))
+               .thenReturn(mock(Future.class));
+
         Mockito.when(topicConfiguration.getProductUpsert()).thenReturn(TOPIC);
         Mockito.when(topicConfiguration.getProductUpsertRetryFail()).thenReturn(RETRY_TOPIC);
         Mockito.when(topicConfiguration.getProductUpsertFail()).thenReturn(FAIL_TOPIC);
 
-        Mockito.doThrow(new KafkaException("Retryable")).when(kafkaProducer).send(any());
+        Mockito.doThrow(new KafkaException("Retryable")).when(kafkaProducer).send(new ProducerRecord<>(RETRY_TOPIC, kafkaKey, event));
 
         sut.publishProductUpserted(kafkaKey, event);
 
-        verify(kafkaProducer, Mockito.atLeast(2)).send(captor.capture());
+        Mockito.verify(kafkaProducer, Mockito.atLeast(2)).send(captor.capture());
 
         final List<ProducerRecord<String, ProductUpsertedEvent>> records = captor.getAllValues();
 
         Assertions.assertTrue(records.size() >= 2, "Expected at least two invocations of send()");
-
-        final ProducerRecord<String, ProductUpsertedEvent> retryRecord = records.get(1);
 
         Assertions.assertEquals(RETRY_TOPIC, retryRecord.topic());
         Assertions.assertEquals(event, retryRecord.value());
@@ -134,7 +144,7 @@ class ProductEventPublisherImplTest {
 
         final ArgumentCaptor<ProducerRecord<String, ProductUpsertedEvent>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
 
-        Mockito.verify(kafkaProducer).send(captor.capture());
+        Mockito.verify(kafkaProducer, Mockito.times(1)).send(captor.capture());
 
         final ProducerRecord<String, ProductUpsertedEvent> record = captor.getValue();
 

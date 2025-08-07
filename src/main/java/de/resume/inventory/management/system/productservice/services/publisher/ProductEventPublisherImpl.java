@@ -10,6 +10,7 @@ import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.errors.RetriableException;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 @Slf4j
@@ -61,12 +62,17 @@ class ProductEventPublisherImpl implements ProductEventPublisher {
     }
 
     private boolean isRetryable(final Exception exception) {
-        return exception instanceof TimeoutException
-                || (exception.getCause() != null && exception.getCause() instanceof TimeoutException)
-                || exception instanceof RetriableException
-                || (exception instanceof KafkaException
-                && exception.getMessage() != null
-                && exception.getMessage().toLowerCase().contains("retryable"));
+        if (Objects.isNull(exception)) {
+            return false;
+        }
+
+        final Throwable rootCause = exception.getCause() != null ? exception.getCause() : exception;
+
+        return rootCause instanceof TimeoutException
+                || rootCause instanceof RetriableException
+                || (rootCause instanceof KafkaException
+                && Objects.nonNull(rootCause.getMessage())
+                && rootCause.getMessage().toLowerCase().contains("retryable"));
     }
 
     private void publishProductUpsertRetry(final String kafkaKey, final ProductUpsertedEvent productUpsertedEvent) {
