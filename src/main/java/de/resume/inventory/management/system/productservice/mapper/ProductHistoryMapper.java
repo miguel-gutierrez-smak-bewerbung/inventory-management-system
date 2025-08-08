@@ -6,12 +6,9 @@ import de.resume.inventory.management.system.productservice.models.enums.Product
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
-import org.mapstruct.factory.Mappers;
 
 @Mapper(componentModel = "spring")
 public interface ProductHistoryMapper {
-
-    ProductHistoryMapper INSTANCE = Mappers.getMapper(ProductHistoryMapper.class);
 
     @Mappings({
         @Mapping(source = "product.id", target = "productId"),
