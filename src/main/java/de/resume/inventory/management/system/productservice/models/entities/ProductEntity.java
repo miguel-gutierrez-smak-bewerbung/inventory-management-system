@@ -51,6 +51,10 @@ public class ProductEntity extends BaseEntity {
     @Digits(integer = 10, fraction = 2, message = "price must be a valid amount with max 2 decimals")
     private BigDecimal price;
 
+    @Column(name = "tenant_id")
+    @NotBlank(message = "tenant id must not be blank")
+    private String tenantId;
+
     public LocalDateTime getUpdatedAt() {
         return super.getUpdatedAt();
     }

@@ -34,6 +34,8 @@ public record ProductUpsertedEvent(
         LocalDateTime timestamp,
 
         @JsonProperty("productAction")
-        ProductAction productAction
-) {
-}
+        ProductAction productAction,
+
+        @JsonProperty("tenantId")
+        String tenantId
+) { }

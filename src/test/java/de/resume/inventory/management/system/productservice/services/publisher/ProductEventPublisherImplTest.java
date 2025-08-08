@@ -47,7 +47,7 @@ class ProductEventPublisherImplTest {
         final String kafkaKey = "product-1";
         final ProductUpsertedEvent productUpsertedEvent = new ProductUpsertedEvent(
                 "product-1", "name", "100", "category", "unit", 1.99,
-                "description", LocalDateTime.now(), ProductAction.CREATED
+                "description", LocalDateTime.now(), ProductAction.CREATED,"Event-tenant"
         );
 
         sut.publishProductUpserted(kafkaKey, productUpsertedEvent);
@@ -67,7 +67,7 @@ class ProductEventPublisherImplTest {
         final String kafkaKey = "product-2";
         final ProductUpsertedEvent event = new ProductUpsertedEvent(
                 "product-2", "name2", "200", "category", "unit",
-                2.99, "description", LocalDateTime.now(), ProductAction.CREATED
+                2.99, "description", LocalDateTime.now(), ProductAction.CREATED,"Event-tenant"
         );
         final ArgumentCaptor<ProducerRecord<String, ProductUpsertedEvent>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
 
@@ -106,7 +106,7 @@ class ProductEventPublisherImplTest {
         final String kafkaKey = "product-3";
         final ProductUpsertedEvent event = new ProductUpsertedEvent(
                 "product-3", "name3", "300", "category",
-                "unit", 3.99, "description", LocalDateTime.now(), ProductAction.CREATED
+                "unit", 3.99, "description", LocalDateTime.now(), ProductAction.CREATED,"Event-tenant"
         );
         final ArgumentCaptor<ProducerRecord<String, ProductUpsertedEvent>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
 
@@ -139,7 +139,7 @@ class ProductEventPublisherImplTest {
         final ProductUpsertedEvent event = new ProductUpsertedEvent(
                 "product-4", "name4", "400", "category",
                 "unit", 4.99, "description", LocalDateTime.now(),
-                ProductAction.CREATED
+                ProductAction.CREATED,"Event-tenant"
         );
 
         Mockito.when(topicConfiguration.getProductUpsertFail()).thenReturn(FAIL_TOPIC);
@@ -162,7 +162,7 @@ class ProductEventPublisherImplTest {
         final String kafkaKey = "product-5";
 
         final ProductDeletedEvent productDeletedEvent =
-                new ProductDeletedEvent("product-5", LocalDateTime.of(2025, 8, 6, 14, 20), ProductAction.DELETED);
+                new ProductDeletedEvent("product-5", LocalDateTime.of(2025, 8, 6, 14, 20), ProductAction.DELETED,"Event-tenant");
 
         @SuppressWarnings("unchecked")
         KafkaProducer<String, ProductDeletedEvent> deletedProducerMock =

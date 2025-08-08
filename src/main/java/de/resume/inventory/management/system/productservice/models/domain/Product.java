@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.resume.inventory.management.system.productservice.models.enums.Category;
 import de.resume.inventory.management.system.productservice.models.enums.Unit;
+import jakarta.persistence.Column;
+import jakarta.validation.constraints.NotBlank;
+
 import java.time.LocalDateTime;
 
 public record Product(
@@ -35,5 +38,9 @@ public record Product(
 
         @JsonProperty("updatedAt")
         @JsonFormat(pattern = "yyyy-MM-dd")
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+
+        @Column(name = "tenant_id")
+        @NotBlank(message = "tenant id must not be blank")
+        String tenantId
 ) {}

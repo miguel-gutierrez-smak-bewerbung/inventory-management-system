@@ -9,19 +9,19 @@ import de.resume.inventory.management.system.productservice.models.enums.Unit;
 import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = { ProductMapperImpl.class })
 class ProductMapperTest {
 
-    private final ProductMapper productMapper = Mappers.getMapper(ProductMapper.class);
+    private final ProductMapper productMapper = new ProductMapperImpl();
 
     @Test
     void shouldMapProductToCreateDtoToProductEntity() {
@@ -31,7 +31,8 @@ class ProductMapperTest {
                 "This is a test description",
                 Category.ELECTRONICS,
                 Unit.PIECE,
-                99.99
+                99.99,
+                "Event-tenant"
         );
 
         final ProductEntity expected = new ProductEntity(
@@ -40,7 +41,8 @@ class ProductMapperTest {
                 "This is a test description",
                 Category.ELECTRONICS,
                 Unit.PIECE,
-                BigDecimal.valueOf(99.99)
+                BigDecimal.valueOf(99.99),
+                "Event-tenant"
         );
 
         final ProductEntity actual = productMapper.toEntity(dto);
@@ -59,7 +61,8 @@ class ProductMapperTest {
                 "Updated description",
                 Category.AUTOMOTIVE,
                 Unit.BOX,
-                199.99
+                199.99,
+                "Event-tenant"
         );
 
         final ProductEntity expected = new ProductEntity(
@@ -68,7 +71,8 @@ class ProductMapperTest {
                 "Updated description",
                 Category.AUTOMOTIVE,
                 Unit.BOX,
-                BigDecimal.valueOf(199.99)
+                BigDecimal.valueOf(199.99),
+                "Event-tenant"
         );
         expected.setId("existing-id");
 
@@ -87,7 +91,8 @@ class ProductMapperTest {
                 "Description",
                 Category.AUTOMOTIVE,
                 Unit.BOX,
-                BigDecimal.valueOf(10.99)
+                BigDecimal.valueOf(10.99),
+                "Event-tenant"
         );
 
         final ProductToCreateDto expected = new ProductToCreateDto(
@@ -96,7 +101,8 @@ class ProductMapperTest {
                 "Description",
                 Category.AUTOMOTIVE,
                 Unit.BOX,
-                10.99
+                10.99,
+                "Event-tenant"
         );
 
         final ProductToCreateDto actual = productMapper.toCreateDto(entity);
@@ -112,7 +118,8 @@ class ProductMapperTest {
                 "Description",
                 Category.FOOD,
                 Unit.PIECE,
-                BigDecimal.valueOf(25.50)
+                BigDecimal.valueOf(25.50),
+                "Event-tenant"
         );
         entity.setId("test-id");
 
@@ -123,7 +130,8 @@ class ProductMapperTest {
                 "Description",
                 Category.FOOD,
                 Unit.PIECE,
-                25.50
+                25.50,
+                "Event-tenant"
         );
 
         final ProductToUpdateDto actual = productMapper.toUpdateDto(entity);
@@ -139,7 +147,8 @@ class ProductMapperTest {
                 "Event-basiert",
                 Category.ELECTRONICS,
                 Unit.PIECE,
-                BigDecimal.valueOf(999.00)
+                BigDecimal.valueOf(999.00),
+                "Event-tenant"
         );
         entity.setId("product-123");
         entity.setUpdatedAt(LocalDateTime.of(2025, 8, 6, 14, 20));
@@ -153,7 +162,8 @@ class ProductMapperTest {
                 999.00,
                 "Event-basiert",
                 LocalDateTime.of(2025, 8, 6, 14, 20),
-                null
+                ProductAction.CREATED,
+                "Event-tenant"
         );
 
         final ProductUpsertedEvent actual = productMapper.toEvent(entity, ProductAction.CREATED);
@@ -165,11 +175,11 @@ class ProductMapperTest {
 
     @Test
     void shouldMapUpdatedAtToTimestamp() {
-        ProductEntity entity = new ProductEntity();
+        final ProductEntity entity = new ProductEntity();
         entity.setId("product-1");
         entity.setUpdatedAt(LocalDateTime.of(2025, 8, 6, 14, 20));
 
-        ProductUpsertedEvent message = productMapper.toEvent(entity, ProductAction.CREATED);
+        final ProductUpsertedEvent message = productMapper.toEvent(entity, ProductAction.CREATED);
 
         assertThat(message.timestamp()).isEqualTo(entity.getUpdatedAt());
     }

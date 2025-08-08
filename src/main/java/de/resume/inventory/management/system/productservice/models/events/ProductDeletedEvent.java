@@ -16,5 +16,8 @@ public record ProductDeletedEvent(
         LocalDateTime timestamp,
 
         @JsonProperty("productAction")
-        ProductAction productAction
+        ProductAction productAction,
+
+        @JsonProperty("tenantId")
+        String tenantId
 ) { }

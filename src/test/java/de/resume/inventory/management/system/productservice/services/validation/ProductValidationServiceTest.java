@@ -30,7 +30,7 @@ class ProductValidationServiceTest {
         final String articleNumber = "PRD-2024-0812";
 
         final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,2.50
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,2.50, "Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(false);
@@ -45,7 +45,7 @@ class ProductValidationServiceTest {
         final String articleNumber = "PRD-2024-0812";
 
         final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,2.50
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,2.50,"Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(true);
@@ -66,7 +66,7 @@ class ProductValidationServiceTest {
         final String articleNumber = "duplicateArticleNumber";
 
         final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,2.50
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,2.50,"Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(false);
@@ -89,7 +89,7 @@ class ProductValidationServiceTest {
         final double negativePrice = -1.0;
 
         final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,negativePrice
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE,negativePrice,"Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(false);
@@ -113,7 +113,7 @@ class ProductValidationServiceTest {
         final double negativePrice = -3.0;
 
         final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                duplicateName, duplicateArticleNumber, null, Category.ELECTRONICS, Unit.PIECE, negativePrice
+                duplicateName, duplicateArticleNumber, null, Category.ELECTRONICS, Unit.PIECE, negativePrice, "Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(duplicateName)).thenReturn(true);
@@ -136,7 +136,7 @@ class ProductValidationServiceTest {
         final String articleNumber = "PRD-2024-0812";
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99
+                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99, "Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(false);
@@ -153,7 +153,7 @@ class ProductValidationServiceTest {
         final String articleNumber = "PRD-2024-0812";
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99
+                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99, "Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(true);
@@ -175,7 +175,7 @@ class ProductValidationServiceTest {
         final String articleNumber = "duplicateArticleNumber";
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99
+                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99, "Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(false);
@@ -198,7 +198,7 @@ class ProductValidationServiceTest {
         final String articleNumber = "PRD-2024-0812";
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, -9.99
+                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, -9.99, "Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(false);
@@ -222,7 +222,7 @@ class ProductValidationServiceTest {
         final double price = -3.0;
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, price
+                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, price, "Event-tenant"
         );
 
         Mockito.when(productRepository.existsByName(name)).thenReturn(true);

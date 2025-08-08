@@ -10,10 +10,12 @@ import de.resume.inventory.management.system.productservice.models.events.Produc
 import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
 import de.resume.inventory.management.system.productservice.repositories.ProductRepository;
 import de.resume.inventory.management.system.productservice.services.publisher.ProductEventPublisher;
+import de.resume.inventory.management.system.productservice.services.resolver.EventKeyResolver;
 import de.resume.inventory.management.system.productservice.services.validation.ProductValidationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,10 @@ public class ProductServiceImpl implements ProductService {
     private final ProductValidationService productValidationService;
     private final ProductEventPublisher productEventPublisher;
     private final ProductMapper productMapper;
+    private final EventKeyResolver eventKeyResolver;
+
+    @Value("${spring.application.name}")
+    private String tenantId;
 
     @Override
     @Transactional
@@ -43,8 +49,11 @@ public class ProductServiceImpl implements ProductService {
         log.info("Persisted product with ID: {}", savedProduct.getId());
 
         final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, ProductAction.CREATED);
-        productEventPublisher.publishProductUpserted(savedProduct.getId(), productUpsertedEvent); //TODO: kafka-key service
-        log.info("Published ProductUpsertedEvent for product ID: {}", savedProduct.getId());
+        final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, savedProduct.getId());
+        log.info("Publishing ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
+
+        productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
+        log.info("Publishied ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
     }
 
     @Override
@@ -66,8 +75,8 @@ public class ProductServiceImpl implements ProductService {
         final ProductEntity savedProduct = productRepository.save(productEntity);
         final ProductAction productAction = exists ? ProductAction.UPDATED : ProductAction.CREATED;
         final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, productAction);
-
-        productEventPublisher.publishProductUpserted(savedProduct.getId(), productUpsertedEvent); //TODO: kafka-key service
+        final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, savedProduct.getId());
+        productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
 
         log.info("Persisted product with ID: {} and published {} event", savedProduct.getId(), productAction);
     }
@@ -85,8 +94,11 @@ public class ProductServiceImpl implements ProductService {
         productRepository.deleteById(id);
         log.info("Deleted product with ID: {}", id);
 
-        final ProductDeletedEvent productDeletedEvent = new ProductDeletedEvent(id, LocalDateTime.now(), ProductAction.DELETED);
-        productEventPublisher.publishProductDeleted(id, productDeletedEvent); //TODO: kafka-key service
+        final ProductDeletedEvent productDeletedEvent = new ProductDeletedEvent(
+                id, LocalDateTime.now(), ProductAction.DELETED, tenantId
+        );
+        final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, id);
+        productEventPublisher.publishProductDeleted(kafkaKey, productDeletedEvent);
     }
 
     @Override

@@ -12,17 +12,25 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
 
-    ProductEntity toEntity(final ProductToCreateDto dto);
+    ProductEntity toEntity(final ProductToCreateDto productToCreateDto);
 
-    ProductEntity toEntity(final ProductToUpdateDto dto);
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "name", source = "name")
+    @Mapping(target = "articleNumber", source = "articleNumber")
+    @Mapping(target = "description", source = "description")
+    @Mapping(target = "category", source = "category")
+    @Mapping(target = "unit", source = "unit")
+    @Mapping(target = "price", source = "price")
+    @Mapping(target = "tenantId", source = "tenantId")
+    ProductEntity toEntity(final ProductToUpdateDto toUpdateDto);
 
-    @Mapping(target = "timestamp", source = "entity.updatedAt")
+    @Mapping(target = "timestamp", source = "productEntity.updatedAt")
     @Mapping(target = "productAction", source = "productAction")
-    ProductUpsertedEvent toEvent(final ProductEntity entity, final ProductAction productAction);
+    ProductUpsertedEvent toEvent(final ProductEntity productEntity, final ProductAction productAction);
 
-    ProductToUpdateDto toUpdateDto(final ProductEntity entity);
+    ProductToUpdateDto toUpdateDto(final ProductEntity productEntity);
 
-    ProductToCreateDto toCreateDto(final ProductEntity entity);
+    ProductToCreateDto toCreateDto(final ProductEntity productEntity);
 
-    Product toDomain(final ProductEntity entity);
+    Product toDomain(final ProductEntity productEntity);
 }
