@@ -7,5 +7,6 @@ spring:
     bootstrap-servers: localhost:9092
 topics:
    product-upsert: inventory.product.upsert.v1
+   product-delete: inventory.product.delete.v1
    product-upsert-fail: inventory.product.upsert.v1.fail
    product-upsert-retry-fail: inventory.product.upsert.v1.retry-fail

@@ -1,6 +1,7 @@
 package de.resume.inventory.management.system.productservice.config;
 
-import de.resume.inventory.management.system.productservice.models.messages.ProductUpsertedEvent;
+import de.resume.inventory.management.system.productservice.models.events.ProductDeletedEvent;
+import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -15,15 +16,25 @@ import java.util.Map;
 public class KafkaConfiguration {
 
     @Bean
-    public KafkaProducer<String, ProductUpsertedEvent> kafkaErrorProducer(final KafkaProperties kafkaProperties) {
+    public KafkaProducer<String, ProductUpsertedEvent> productUpsertedEventProducer(final KafkaProperties kafkaProperties) {
         final Map<String, Object> producerProperties = new HashMap<>(kafkaProperties.buildProducerProperties());
+        configureProducerProperties(producerProperties);
+        return new KafkaProducer<>(producerProperties);
+    }
+
+    @Bean
+    public KafkaProducer<String, ProductDeletedEvent> productDeletedEventProducer(final KafkaProperties kafkaProperties) {
+        final Map<String, Object> producerProperties = new HashMap<>(kafkaProperties.buildProducerProperties());
+        configureProducerProperties(producerProperties);
+        return new KafkaProducer<>(producerProperties);
+    }
+
+    private void configureProducerProperties(final Map<String, Object> producerProperties) {
         producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, org.springframework.kafka.support.serializer.JsonSerializer.class);
         producerProperties.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
         producerProperties.put(ProducerConfig.ACKS_CONFIG, "all");
         producerProperties.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 5);
         producerProperties.put(ProducerConfig.RETRIES_CONFIG, Integer.MAX_VALUE);
-        return new KafkaProducer<>(producerProperties);
-
     }
 }

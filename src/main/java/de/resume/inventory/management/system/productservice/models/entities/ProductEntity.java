@@ -11,6 +11,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -49,5 +50,9 @@ public class ProductEntity extends BaseEntity {
     @DecimalMin(value = "0.0", inclusive = false, message = "price must be greater than 0")
     @Digits(integer = 10, fraction = 2, message = "price must be a valid amount with max 2 decimals")
     private BigDecimal price;
+
+    public LocalDateTime getUpdatedAt() {
+        return super.getUpdatedAt();
+    }
 }
 

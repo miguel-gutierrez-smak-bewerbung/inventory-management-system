@@ -4,7 +4,8 @@ import static org.mockito.Mockito.mock;
 
 import de.resume.inventory.management.system.productservice.config.TopicConfiguration;
 import de.resume.inventory.management.system.productservice.models.enums.ProductAction;
-import de.resume.inventory.management.system.productservice.models.messages.ProductUpsertedEvent;
+import de.resume.inventory.management.system.productservice.models.events.ProductDeletedEvent;
+import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
@@ -153,5 +154,32 @@ class ProductEventPublisherImplTest {
 
         Assertions.assertEquals(FAIL_TOPIC, record.topic());
         Assertions.assertEquals(event, record.value());
+    }
+
+    @Test
+    void publishProductDeleted_sendsMessageViaKafkaProducer() {
+        final String deleteTopic = "product-delete";
+        final String kafkaKey = "product-5";
+
+        final ProductDeletedEvent productDeletedEvent =
+                new ProductDeletedEvent("product-5", LocalDateTime.of(2025, 8, 6, 14, 20), ProductAction.DELETED);
+
+        @SuppressWarnings("unchecked")
+        KafkaProducer<String, ProductDeletedEvent> deletedProducerMock =
+                mock(KafkaProducer.class);
+        sut = new ProductEventPublisherImpl(topicConfiguration, kafkaProducer, deletedProducerMock);
+
+        Mockito.when(topicConfiguration.getProductDelete()).thenReturn(deleteTopic);
+
+        sut.publishProductDeleted(kafkaKey, productDeletedEvent);
+
+        ArgumentCaptor<ProducerRecord<String, ProductDeletedEvent>> captor =
+                ArgumentCaptor.forClass(ProducerRecord.class);
+        Mockito.verify(deletedProducerMock).send(captor.capture());
+
+        ProducerRecord<String, ProductDeletedEvent> record = captor.getValue();
+        Assertions.assertEquals(deleteTopic, record.topic());
+        Assertions.assertEquals(kafkaKey, record.key());
+        Assertions.assertEquals(productDeletedEvent, record.value());
     }
 }

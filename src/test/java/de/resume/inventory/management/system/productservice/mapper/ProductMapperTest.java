@@ -4,8 +4,9 @@ import de.resume.inventory.management.system.productservice.models.dtos.ProductT
 import de.resume.inventory.management.system.productservice.models.dtos.ProductToUpdateDto;
 import de.resume.inventory.management.system.productservice.models.entities.ProductEntity;
 import de.resume.inventory.management.system.productservice.models.enums.Category;
+import de.resume.inventory.management.system.productservice.models.enums.ProductAction;
 import de.resume.inventory.management.system.productservice.models.enums.Unit;
-import de.resume.inventory.management.system.productservice.models.messages.ProductUpsertedEvent;
+import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
@@ -155,7 +156,7 @@ class ProductMapperTest {
                 null
         );
 
-        final ProductUpsertedEvent actual = productMapper.toMessage(entity);
+        final ProductUpsertedEvent actual = productMapper.toEvent(entity, ProductAction.CREATED);
 
         assertThat(actual).usingRecursiveComparison()
                 .ignoringFields("action")
@@ -168,7 +169,7 @@ class ProductMapperTest {
         entity.setId("product-1");
         entity.setUpdatedAt(LocalDateTime.of(2025, 8, 6, 14, 20));
 
-        ProductUpsertedEvent message = productMapper.toMessage(entity);
+        ProductUpsertedEvent message = productMapper.toEvent(entity, ProductAction.CREATED);
 
         assertThat(message.timestamp()).isEqualTo(entity.getUpdatedAt());
     }

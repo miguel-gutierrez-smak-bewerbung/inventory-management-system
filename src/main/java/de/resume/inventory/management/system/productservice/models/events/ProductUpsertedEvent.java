@@ -1,4 +1,4 @@
-package de.resume.inventory.management.system.productservice.models.messages;
+package de.resume.inventory.management.system.productservice.models.events;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;

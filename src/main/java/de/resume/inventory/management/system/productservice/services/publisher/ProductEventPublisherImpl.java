@@ -1,7 +1,8 @@
 package de.resume.inventory.management.system.productservice.services.publisher;
 
 import de.resume.inventory.management.system.productservice.config.TopicConfiguration;
-import de.resume.inventory.management.system.productservice.models.messages.ProductUpsertedEvent;
+import de.resume.inventory.management.system.productservice.models.events.ProductDeletedEvent;
+import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -20,6 +21,7 @@ class ProductEventPublisherImpl implements ProductEventPublisher {
 
     private final TopicConfiguration topicConfiguration;
     private final KafkaProducer<String, ProductUpsertedEvent> kafkaProducer;
+    private final KafkaProducer<String, ProductDeletedEvent> kafkaDeletedProducer;
 
     @Override
     public void publishProductUpserted(final String kafkaKey, final ProductUpsertedEvent productUpsertedEvent) {
@@ -44,11 +46,26 @@ class ProductEventPublisherImpl implements ProductEventPublisher {
         }
     }
 
+    @Override
+    public void publishProductDeleted(final String kafkaKey, final ProductDeletedEvent productDeletedEvent) {
+        try {
+            log.info("Publishing product deleted event: {}", productDeletedEvent);
+            sendMessageToKafka(kafkaKey, productDeletedEvent);
+        }catch (Exception exception) {
+            log.error("Error while publishing product deleted event: {}", exception.getMessage(), exception);
+        }
+    }
 
     private void sendMessageToKafka(final String kafkaKey, final ProductUpsertedEvent productUpsertedEvent) {
         final ProducerRecord<String, ProductUpsertedEvent> record =
                 new ProducerRecord<>(topicConfiguration.getProductUpsert(), kafkaKey, productUpsertedEvent);
         kafkaProducer.send(record);
+    }
+
+    private void sendMessageToKafka(final String kafkaKey, final ProductDeletedEvent productDeletedEvent) {
+        final ProducerRecord<String, ProductDeletedEvent> record =
+                new ProducerRecord<>(topicConfiguration.getProductDelete(), kafkaKey, productDeletedEvent);
+        kafkaDeletedProducer.send(record);
     }
 
     private void handlePublishFailure(final String kafkaKey, final ProductUpsertedEvent productUpsertedEvent, final Exception exception) {

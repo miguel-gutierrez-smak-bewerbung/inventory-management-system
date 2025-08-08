@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "topics")
 public class TopicConfiguration {
     private String productUpsert;
+    private String productDelete;
     private String productUpsertFail;
     private String productUpsertRetryFail;
 }
