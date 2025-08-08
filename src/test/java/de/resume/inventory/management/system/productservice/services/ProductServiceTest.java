@@ -63,9 +63,9 @@ class ProductServiceTest {
     @Test
     void createProduct_persistsAndPublishesCreatedEvent() {
         final String tenantIdentifier = "Event-tenant";
-        final String productName = "Akku-Schrauber";
+        final String productName = "Cordless screwdriver";
         final String productArticleNumber = "AS-1000";
-        final String productDescription = "Kompakter Akku-Schrauber mit 2 Gängen";
+        final String productDescription = "Compact cordless screwdriver with 2 gears";
         final Category productCategory = Category.TOYS;
         final Unit productUnit = Unit.PIECE;
         final double productPrice = 79.90;
@@ -137,9 +137,9 @@ class ProductServiceTest {
     void updateProduct_whenProductExists_persistsAndPublishesUpdatedEvent() {
         final String tenantIdentifier = "Event-tenant";
         final String incomingProductIdentifier = "product-2000";
-        final String productName = "Laser-Entfernungsmesser";
+        final String productName = "Laser distance meter";
         final String productArticleNumber = "LEM-20";
-        final String productDescription = "Messbereich bis 20m, IP54";
+        final String productDescription = "Measuring range up to 20m, IP54";
         final Category productCategory = Category.HOUSEHOLD;
         final Unit productUnit = Unit.PIECE;
         final double productPrice = 49.50;
@@ -213,9 +213,9 @@ class ProductServiceTest {
         final String tenantIdentifier = "Event-tenant";
         final String incomingProductIdentifier = "unknown-3000";
         final String newPersistedProductIdentifier = "product-3000";
-        final String productName = "CO2-Sensor";
+        final String productName = "CO2 sensor";
         final String productArticleNumber = "CO2-3000";
-        final String productDescription = "Raumluftqualitäts-Sensor";
+        final String productDescription = "Indoor air quality sensor";
         final Category productCategory = Category.HEALTH;
         final Unit productUnit = Unit.PIECE;
         final double productPrice = 129.00;
@@ -320,9 +320,9 @@ class ProductServiceTest {
         final Pageable pageable = PageRequest.of(0, 2);
 
         final ProductEntity firstProductEntity = new ProductEntity(
-                "Feinsicherung",
+                "Fuse",
                 "FS-5x20",
-                "Feinsicherung 5x20mm träge",
+                "Time-delay fuse 5x20mm",
                 Category.ELECTRONICS,
                 Unit.PIECE,
                 BigDecimal.valueOf(0.49),
@@ -331,9 +331,9 @@ class ProductServiceTest {
         firstProductEntity.setId("product-6001");
 
         final ProductEntity secondProductEntity = new ProductEntity(
-                "Kabelbinder",
-                "KB-200",
-                "Kabelbinder 200mm schwarz",
+                "Cable ties",
+                "CT-200",
+                "Cable ties 200mm black",
                 Category.HOUSEHOLD,
                 Unit.PACKAGE,
                 BigDecimal.valueOf(3.99),
@@ -361,9 +361,9 @@ class ProductServiceTest {
         final String productIdentifier = "product-7000";
 
         final ProductEntity foundProductEntity = new ProductEntity(
-                "Wasserwaage",
-                "WW-40",
-                "Wasserwaage 40cm",
+                "Spirit level",
+                "SL-40",
+                "Spirit level 40cm",
                 Category.HOUSEHOLD,
                 Unit.PIECE,
                 BigDecimal.valueOf(12.90),
