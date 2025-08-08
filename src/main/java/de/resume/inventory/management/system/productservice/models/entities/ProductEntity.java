@@ -8,14 +8,16 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
 @Table(name = "products")
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class ProductEntity extends BaseEntity {
 
@@ -48,4 +50,13 @@ public class ProductEntity extends BaseEntity {
     @DecimalMin(value = "0.0", inclusive = false, message = "price must be greater than 0")
     @Digits(integer = 10, fraction = 2, message = "price must be a valid amount with max 2 decimals")
     private BigDecimal price;
+
+    @Column(name = "tenant_id")
+    @NotBlank(message = "tenant id must not be blank")
+    private String tenantId;
+
+    public LocalDateTime getUpdatedAt() {
+        return super.getUpdatedAt();
+    }
 }
+

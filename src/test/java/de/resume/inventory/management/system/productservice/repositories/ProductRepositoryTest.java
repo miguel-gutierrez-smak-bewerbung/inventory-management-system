@@ -116,9 +116,7 @@ class ProductRepositoryTest {
 
         sut.save(productEntity1);
 
-        Assertions.assertThrows(Exception.class, () -> {
-            sut.saveAndFlush(productEntity2);
-        });
+        Assertions.assertThrows(Exception.class, () -> sut.saveAndFlush(productEntity2));
     }
 
     @Test
@@ -129,9 +127,7 @@ class ProductRepositoryTest {
 
         sut.save(productEntity1);
 
-        Assertions.assertThrows(Exception.class, () ->
-            sut.saveAndFlush(productEntity2)
-        );
+        Assertions.assertThrows(Exception.class, () -> sut.saveAndFlush(productEntity2));
     }
 
     @Test
@@ -140,11 +136,11 @@ class ProductRepositoryTest {
         final ProductEntity productEntity = createProduct("findByNameTest", "8901234567");
         sut.save(productEntity);
 
-        final Optional<ProductEntity> found = sut.findByName("findByNameTest");
+        final Optional<ProductEntity> actual = sut.findByName("findByNameTest");
 
-        Assertions.assertTrue(found.isPresent());
+        Assertions.assertTrue(actual.isPresent());
 
-        assertThat(found.get())
+        assertThat(actual.get())
                 .usingRecursiveComparison()
                 .ignoringFields("id", "createdAt", "updatedAt")
                 .isEqualTo(productEntity);
@@ -164,6 +160,7 @@ class ProductRepositoryTest {
         entity.setCategory(Category.ELECTRONICS);
         entity.setUnit(Unit.PIECE);
         entity.setPrice(new BigDecimal("10.0"));
+        entity.setTenantId("Event-tenant");
         return entity;
     }
 

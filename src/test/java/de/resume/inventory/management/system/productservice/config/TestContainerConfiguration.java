@@ -19,5 +19,6 @@ public class TestContainerConfiguration {
                 .withStartupTimeout(java.time.Duration.ofMinutes(2))
                 .withInitScript("init.sql")
                 .withCommand("postgres", "-c", "fsync=off", "-c", "max_connections=100");
+
     }
 }
