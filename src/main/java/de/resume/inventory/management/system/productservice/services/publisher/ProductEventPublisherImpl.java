@@ -47,11 +47,11 @@ class ProductEventPublisherImpl implements ProductEventPublisher {
     }
 
     @Override
-    public void publishProductDeleted(final String kafkaKey, final ProductDeletedEvent productDeletedEvent) {
+    public void  publishProductDeleted(final String kafkaKey, final ProductDeletedEvent productDeletedEvent) {
         try {
             log.info("Publishing product deleted event: {}", productDeletedEvent);
             sendMessageToKafka(kafkaKey, productDeletedEvent);
-        }catch (Exception exception) {
+        } catch (Exception exception) {
             log.error("Error while publishing product deleted event: {}", exception.getMessage(), exception);
         }
     }

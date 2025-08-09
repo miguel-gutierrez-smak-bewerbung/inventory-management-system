@@ -51,6 +51,9 @@ class ProductServiceTest {
     @Mock
     private EventKeyResolver eventKeyResolver;
 
+    @Mock
+    private ProductHistoryService productHistoryService;
+
     @InjectMocks
     private ProductServiceImpl productService;
 
@@ -131,6 +134,7 @@ class ProductServiceTest {
         Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.CREATED);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, persistedProductIdentifier);
         Mockito.verify(productEventPublisher).publishProductUpserted(expectedKafkaKey, productUpsertedEvent);
+        Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
     }
 
     @Test
@@ -206,6 +210,7 @@ class ProductServiceTest {
         Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.UPDATED);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, incomingProductIdentifier);
         Mockito.verify(productEventPublisher).publishProductUpserted(expectedKafkaKey, expectedProductUpsertedEvent);
+        Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.UPDATED, tenantIdentifier);
     }
 
     @Test
@@ -282,6 +287,7 @@ class ProductServiceTest {
         Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.CREATED);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, newPersistedProductIdentifier);
         Mockito.verify(productEventPublisher).publishProductUpserted(expectedKafkaKey, expectedProductUpsertedEvent);
+        Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
     }
 
     @Test
@@ -290,12 +296,24 @@ class ProductServiceTest {
         final String productIdentifier = "product-4000";
         final String expectedKafkaKey = tenantIdentifier + "-" + productIdentifier;
 
-        Mockito.when(productRepository.existsById(productIdentifier)).thenReturn(true);
+        final ProductEntity entity = new ProductEntity(
+                "Any",
+                "ANY-1",
+                "desc",
+                Category.TOYS,
+                Unit.PIECE,
+                BigDecimal.ONE,
+                tenantIdentifier
+        );
+        entity.setId(productIdentifier);
+
+        Mockito.when(productRepository.findById(productIdentifier)).thenReturn(Optional.of(entity));
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, productIdentifier)).thenReturn(expectedKafkaKey);
 
         productService.deleteProduct(productIdentifier);
 
-        Mockito.verify(productRepository).existsById(productIdentifier);
+        Mockito.verify(productRepository).findById(productIdentifier);
+        Mockito.verify(productHistoryService).saveProductHistory(entity, ProductAction.DELETED, tenantIdentifier);
         Mockito.verify(productRepository).deleteById(productIdentifier);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, productIdentifier);
         Mockito.verify(productEventPublisher)
@@ -306,12 +324,13 @@ class ProductServiceTest {
     void deleteProduct_whenDoesNotExist_noAction() {
         final String productIdentifier = "missing-5000";
 
-        Mockito.when(productRepository.existsById(productIdentifier)).thenReturn(false);
+        Mockito.when(productRepository.findById(productIdentifier)).thenReturn(Optional.empty());
 
         productService.deleteProduct(productIdentifier);
 
-        Mockito.verify(productRepository).existsById(productIdentifier);
+        Mockito.verify(productRepository).findById(productIdentifier);
         Mockito.verify(productRepository, Mockito.never()).deleteById(Mockito.anyString());
+        Mockito.verify(productHistoryService, Mockito.never()).saveProductHistory(Mockito.any(), Mockito.any(), Mockito.anyString());
         Mockito.verify(productEventPublisher, Mockito.never()).publishProductDeleted(Mockito.anyString(), Mockito.any(ProductDeletedEvent.class));
     }
 
