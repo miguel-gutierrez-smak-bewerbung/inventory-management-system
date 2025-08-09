@@ -51,7 +51,7 @@ class ProductEventPublisherImpl implements ProductEventPublisher {
         try {
             log.info("Publishing product deleted event: {}", productDeletedEvent);
             sendMessageToKafka(kafkaKey, productDeletedEvent);
-        } catch (Exception exception) {
+        } catch (final Exception exception) {
             log.error("Error while publishing product deleted event: {}", exception.getMessage(), exception);
         }
     }
