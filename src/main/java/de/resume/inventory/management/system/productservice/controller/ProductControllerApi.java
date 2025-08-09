@@ -53,7 +53,7 @@ public interface ProductControllerApi {
             )
     })
     @PostMapping
-    ResponseEntity<Void> create(
+    ResponseEntity<Product> create(
             @Valid
             @RequestBody
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -110,7 +110,7 @@ public interface ProductControllerApi {
             )
     })
     @PutMapping("/update")
-    ResponseEntity<Void> update(
+    ResponseEntity<Product> update(
             @Valid
             @RequestBody
             @io.swagger.v3.oas.annotations.parameters.RequestBody(

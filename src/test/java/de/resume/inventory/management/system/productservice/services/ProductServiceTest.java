@@ -126,7 +126,11 @@ class ProductServiceTest {
         Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED)).thenReturn(productUpsertedEvent);
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, persistedProductIdentifier)).thenReturn(expectedKafkaKey);
 
-        productService.createProduct(productToCreateDto);
+        final Product expectedDomainProduct = Mockito.mock(Product.class);
+        Mockito.when(productMapper.toDomain(persistedProductEntity)).thenReturn(expectedDomainProduct);
+
+        final Product actual = productService.createProduct(productToCreateDto);
+        Assertions.assertSame(expectedDomainProduct, actual);
 
         Mockito.verify(productValidationService).validateProductToCreate(productToCreateDto);
         Mockito.verify(productMapper).toEntity(productToCreateDto);
@@ -202,7 +206,11 @@ class ProductServiceTest {
         Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.UPDATED)).thenReturn(expectedProductUpsertedEvent);
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, incomingProductIdentifier)).thenReturn(expectedKafkaKey);
 
-        productService.updateProduct(productToUpdateDto);
+        final Product expectedDomainProduct = Mockito.mock(Product.class);
+        Mockito.when(productMapper.toDomain(persistedProductEntity)).thenReturn(expectedDomainProduct);
+
+        final Product actual = productService.updateProduct(productToUpdateDto);
+        Assertions.assertSame(expectedDomainProduct, actual);
 
         Mockito.verify(productValidationService).validateProductToUpdate(productToUpdateDto);
         Mockito.verify(productRepository).existsById(incomingProductIdentifier);
@@ -279,7 +287,11 @@ class ProductServiceTest {
         Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED)).thenReturn(expectedProductUpsertedEvent);
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, newPersistedProductIdentifier)).thenReturn(expectedKafkaKey);
 
-        productService.updateProduct(productToUpdateDto);
+        final Product expectedDomainProduct = Mockito.mock(Product.class);
+        Mockito.when(productMapper.toDomain(persistedProductEntity)).thenReturn(expectedDomainProduct);
+
+        final Product actual = productService.updateProduct(productToUpdateDto);
+        Assertions.assertSame(expectedDomainProduct, actual);
 
         Mockito.verify(productValidationService).validateProductToUpdate(productToUpdateDto);
         Mockito.verify(productRepository).existsById(incomingProductIdentifier);

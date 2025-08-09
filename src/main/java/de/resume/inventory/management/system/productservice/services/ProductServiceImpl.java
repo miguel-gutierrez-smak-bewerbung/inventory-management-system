@@ -41,7 +41,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public void createProduct(final ProductToCreateDto productToCreateDto) {
+    public Product createProduct(final ProductToCreateDto productToCreateDto) {
         log.info("Creating product from dto: {}", productToCreateDto);
 
         productValidationService.validateProductToCreate(productToCreateDto);
@@ -56,12 +56,13 @@ public class ProductServiceImpl implements ProductService {
         log.info("Publishing ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
 
         productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
-        log.info("Publishied ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
+        log.info("Published ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
+        return productMapper.toDomain(savedProduct);
     }
 
     @Override
     @Transactional
-    public void updateProduct(final ProductToUpdateDto productToUpdateDto) {
+    public Product updateProduct(final ProductToUpdateDto productToUpdateDto) {
         log.info("Updating product from dto: {}", productToUpdateDto);
 
         productValidationService.validateProductToUpdate(productToUpdateDto);
@@ -84,6 +85,7 @@ public class ProductServiceImpl implements ProductService {
         productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
 
         log.info("Persisted product with ID: {} and published {} event", savedProduct.getId(), productAction);
+        return productMapper.toDomain(savedProduct);
     }
 
     @Override
