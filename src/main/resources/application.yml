@@ -49,3 +49,7 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui
+openapi:
+  title: Product Service
+  version: 1.0.0
+  external-docs-url: https://github.com/miguel-gutierrez-smak-bewerbung/inventory-management-system
