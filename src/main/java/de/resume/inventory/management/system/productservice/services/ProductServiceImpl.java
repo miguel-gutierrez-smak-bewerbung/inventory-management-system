@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -33,6 +34,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductEventPublisher productEventPublisher;
     private final ProductMapper productMapper;
     private final EventKeyResolver eventKeyResolver;
+    private final ProductHistoryService productHistoryService;
 
     @Value("${spring.application.name}")
     private String tenantId;
@@ -46,6 +48,7 @@ public class ProductServiceImpl implements ProductService {
 
         final ProductEntity productEntity = productMapper.toEntity(productToCreateDto);
         final ProductEntity savedProduct = productRepository.save(productEntity);
+        productHistoryService.saveProductHistory(savedProduct, ProductAction.CREATED, tenantId);
         log.info("Persisted product with ID: {}", savedProduct.getId());
 
         final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, ProductAction.CREATED);
@@ -74,6 +77,8 @@ public class ProductServiceImpl implements ProductService {
 
         final ProductEntity savedProduct = productRepository.save(productEntity);
         final ProductAction productAction = exists ? ProductAction.UPDATED : ProductAction.CREATED;
+        productHistoryService.saveProductHistory(savedProduct, productAction, tenantId);
+
         final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, productAction);
         final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, savedProduct.getId());
         productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
@@ -84,21 +89,28 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void deleteProduct(final String id) {
-        log.info("Deleting product with ID: {}", id);
-
-        if (!productRepository.existsById(id)) {
-            log.warn("Product with ID {} does not exist. Skipping deletion.", id);
-            return;
+        if (Objects.isNull(id) || id.isBlank()) {
+            throw new IllegalArgumentException("Product ID must not be null or blank");
         }
 
-        productRepository.deleteById(id);
-        log.info("Deleted product with ID: {}", id);
+       log.info("Deleting product with ID: {}", id);
+       final Optional<ProductEntity> productEntityOptional = productRepository.findById(id);
 
-        final ProductDeletedEvent productDeletedEvent = new ProductDeletedEvent(
-                id, LocalDateTime.now(), ProductAction.DELETED, tenantId
-        );
-        final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, id);
-        productEventPublisher.publishProductDeleted(kafkaKey, productDeletedEvent);
+       if (productEntityOptional.isEmpty()) {
+           log.warn("Product with ID {} does not exist. Skipping deletion.", id);
+           return;
+       }
+
+       final ProductEntity productEntity = productEntityOptional.get();
+       productHistoryService.saveProductHistory(productEntity, ProductAction.DELETED, tenantId);
+       productRepository.deleteById(productEntity.getId());
+
+       log.info("Deleted product with ID: {}", productEntity.getId());
+
+       final ProductDeletedEvent productDeletedEvent = new ProductDeletedEvent(id, LocalDateTime.now(), ProductAction.DELETED, tenantId);
+       final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, id);
+       productEventPublisher.publishProductDeleted(kafkaKey, productDeletedEvent);
+       log.info("Published ProductDeletedEvent for kafkaKey: {}", kafkaKey);
     }
 
     @Override
