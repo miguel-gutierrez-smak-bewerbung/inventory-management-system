@@ -43,3 +43,9 @@ spring:
 logging:
   level:
     org.springframework: INFO
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
