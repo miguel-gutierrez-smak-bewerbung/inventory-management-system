@@ -1,7 +1,7 @@
 CREATE SCHEMA IF NOT EXISTS local;
 
-CREATE TABLE local.products (
-    id UUID PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS local.products (
+    id VARCHAR(255) PRIMARY KEY,
     article_number VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,

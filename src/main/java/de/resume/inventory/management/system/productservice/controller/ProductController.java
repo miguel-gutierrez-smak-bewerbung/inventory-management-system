@@ -6,11 +6,11 @@ import de.resume.inventory.management.system.productservice.models.dtos.ProductT
 import de.resume.inventory.management.system.productservice.services.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -20,13 +20,14 @@ import java.net.URI;
 
 @Slf4j
 @RestController
+@RequestMapping("/api/products")
 @RequiredArgsConstructor
 public class ProductController implements ProductControllerApi {
 
     private final ProductService productService;
 
     @Override
-    public ResponseEntity<Product> create(ProductToCreateDto productToCreateDto) {
+    public ResponseEntity<Product> create(final ProductToCreateDto productToCreateDto) {
         log.info("HTTP POST /products — creating product. articleNumber={}, tenantId={}",
                 productToCreateDto.articleNumber(), productToCreateDto.tenantId());
 
@@ -42,7 +43,7 @@ public class ProductController implements ProductControllerApi {
     }
 
     @Override
-    public ResponseEntity<Product> update(ProductToUpdateDto productToUpdateDto) {
+    public ResponseEntity<Product> update(final ProductToUpdateDto productToUpdateDto) {
         log.info("HTTP PUT /products — updating product. id={}, articleNumber={}, tenantId={}",
                 productToUpdateDto.id(), productToUpdateDto.articleNumber(), productToUpdateDto.tenantId());
 

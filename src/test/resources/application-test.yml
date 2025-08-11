@@ -30,4 +30,3 @@ logging:
 testcontainers:
   ryuk:
     disabled: false
-  reuse.enable: true

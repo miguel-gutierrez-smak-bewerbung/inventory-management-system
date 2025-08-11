@@ -1,5 +1,6 @@
 package de.resume.inventory.management.system.productservice.services;
 
+import de.resume.inventory.management.system.productservice.exceptions.ProductNotFoundException;
 import de.resume.inventory.management.system.productservice.mapper.ProductMapper;
 import de.resume.inventory.management.system.productservice.models.domain.Product;
 import de.resume.inventory.management.system.productservice.models.dtos.ProductToCreateDto;
@@ -332,18 +333,24 @@ class ProductServiceTest {
                 .publishProductDeleted(Mockito.eq(expectedKafkaKey), Mockito.any(ProductDeletedEvent.class));
     }
 
+
     @Test
-    void deleteProduct_whenDoesNotExist_noAction() {
+    void deleteProduct_whenDoesNotExist_throwsProductNotFoundException() {
         final String productIdentifier = "missing-5000";
 
         Mockito.when(productRepository.findById(productIdentifier)).thenReturn(Optional.empty());
 
-        productService.deleteProduct(productIdentifier);
+        Assertions.assertThrows(
+                ProductNotFoundException.class,
+                () -> productService.deleteProduct(productIdentifier)
+        );
 
         Mockito.verify(productRepository).findById(productIdentifier);
         Mockito.verify(productRepository, Mockito.never()).deleteById(Mockito.anyString());
-        Mockito.verify(productHistoryService, Mockito.never()).saveProductHistory(Mockito.any(), Mockito.any(), Mockito.anyString());
-        Mockito.verify(productEventPublisher, Mockito.never()).publishProductDeleted(Mockito.anyString(), Mockito.any(ProductDeletedEvent.class));
+        Mockito.verify(productHistoryService, Mockito.never())
+                .saveProductHistory(Mockito.any(), Mockito.any(), Mockito.anyString());
+        Mockito.verify(productEventPublisher, Mockito.never())
+                .publishProductDeleted(Mockito.anyString(), Mockito.any());
     }
 
     @Test

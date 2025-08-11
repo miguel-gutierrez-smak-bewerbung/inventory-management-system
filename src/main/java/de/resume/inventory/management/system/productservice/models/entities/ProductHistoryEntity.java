@@ -29,12 +29,12 @@ public class ProductHistoryEntity extends BaseEntity {
     @Column(name = "product_action", nullable = false)
     private ProductAction action;
 
-    @Column(name = "name", unique = true, nullable = false, length = 30)
+    @Column(name = "name", nullable = false, length = 30)
     @NotBlank(message = "product name must not be blank")
     @Size(min = 2, max = 30, message = "product name must be between 2 and 30 characters")
     private String name;
 
-    @Column(name = "article_number", unique = true, nullable = false, length = 20)
+    @Column(name = "article_number", nullable = false, length = 20)
     @NotBlank(message = "article number must not be blank")
     @Size(min = 2, max = 20, message = "article number must be between 2 and 20 characters")
     private String articleNumber;

@@ -12,4 +12,6 @@ public interface ProductRepository extends JpaRepository<ProductEntity, String> 
     Optional<ProductEntity> findByName(String name);
     boolean existsByArticleNumber(String articleNumber);
     boolean existsByName(String name);
+    boolean existsByNameAndIdNot(final String name, final String id);
+    boolean existsByArticleNumberAndIdNot(final String articleNumber, final String id);
 }
