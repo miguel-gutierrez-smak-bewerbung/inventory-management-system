@@ -2,7 +2,7 @@ package de.resume.inventory.management.system.productservice.controller.advices;
 
 import de.resume.inventory.management.system.productservice.controller.ProductController;
 import de.resume.inventory.management.system.productservice.exceptions.ProductNotFoundException;
-import de.resume.inventory.management.system.productservice.services.factories.ProblemDetailService;
+import de.resume.inventory.management.system.productservice.services.advices.ProblemDetailService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.Order;

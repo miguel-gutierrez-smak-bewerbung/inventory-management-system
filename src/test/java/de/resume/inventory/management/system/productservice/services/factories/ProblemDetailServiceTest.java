@@ -1,6 +1,7 @@
 package de.resume.inventory.management.system.productservice.services.factories;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import de.resume.inventory.management.system.productservice.services.advices.ProblemDetailService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;

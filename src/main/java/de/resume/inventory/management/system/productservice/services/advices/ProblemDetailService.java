@@ -1,4 +1,4 @@
-package de.resume.inventory.management.system.productservice.services.factories;
+package de.resume.inventory.management.system.productservice.services.advices;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -116,6 +116,29 @@ public class ProblemDetailService {
         if (httpServletRequest != null) {
             problemDetail.setProperty("instance", httpServletRequest.getRequestURI());
         }
+    }
+
+    public ProblemDetail buildNotFoundFromReason(final String exceptionReason) {
+        final String title = Optional.ofNullable(exceptionReason)
+                .map(reason -> reason.contains(":") ? reason.substring(0, reason.indexOf(':')).trim() : reason)
+                .orElse("Not Found");
+
+        final String detail = Optional.ofNullable(exceptionReason)
+                .filter(reason -> reason.contains(":"))
+                .map(reason -> reason.substring(reason.indexOf(':') + 1).trim())
+                .orElse(exceptionReason);
+
+        return buildNotFound(title, detail);
+    }
+
+    public ProblemDetail buildBadRequestFromReason(final String exceptionReason) {
+        final String title = Optional.ofNullable(exceptionReason).orElse("Invalid request");
+        return buildBadRequest(title, exceptionReason);
+    }
+
+    public ProblemDetail buildServerErrorFromReason(final String exceptionReason, final String fallbackMessage) {
+        final String detail = Optional.ofNullable(exceptionReason).orElse(fallbackMessage);
+        return buildServerError("An unexpected error occurred: " + detail);
     }
 
     private ProblemDetail buildEnumProblem(final Class<?> enumType, final String fieldName, final String invalidValue) {
