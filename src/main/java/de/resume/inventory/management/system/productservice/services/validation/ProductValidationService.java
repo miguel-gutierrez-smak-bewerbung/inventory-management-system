@@ -6,6 +6,4 @@ import de.resume.inventory.management.system.productservice.models.dtos.ProductT
 public interface ProductValidationService {
     void validateProductToCreate(final ProductToCreateDto productToCreateDto);
     void validateProductToUpdate(final ProductToUpdateDto productToUpdateDto);
-    boolean isProductNameAvailable(final String name);
-    boolean isArticleNumberAvailable(final String articleNumber);
 }

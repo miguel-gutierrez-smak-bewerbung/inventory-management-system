@@ -9,120 +9,127 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.SequencedCollection;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-class ProductValidationServiceImpl implements ProductValidationService {
+public class ProductValidationServiceImpl implements ProductValidationService {
 
     private final ProductRepository productRepository;
 
-    private record ValidationRule<T>(Predicate<T> validator, Function<T, String> errorMessage) {
-        public boolean isValid(T dto) {
-            if (Objects.isNull(dto)) { return false; }
-            return validator.test(dto);
-        }
+    @Override
+    public void validateProductToCreate(final ProductToCreateDto productToCreateDto) {
+        log.info("Validating product to create: name='{}', articleNumber='{}', tenantId='{}'",
+                productToCreateDto.name(), productToCreateDto.articleNumber(), productToCreateDto.tenantId());
 
-        public String getErrorMessage(T dto) {
-            return errorMessage.apply(dto);
-        }
+        final List<String> validationErrors = new ArrayList<>();
+        final String tenantId = productToCreateDto.tenantId();
+
+        validateNameUniqueness(productToCreateDto.name(), tenantId, validationErrors);
+        validateArticleNumberUniqueness(productToCreateDto.articleNumber(), tenantId, validationErrors);
+        validatePriceGreaterThanZero(productToCreateDto.price(), validationErrors);
+
+        throwIfErrors(validationErrors);
+        log.info("Product create validation passed: name='{}', articleNumber='{}', tenantId='{}'",
+                productToCreateDto.name(), productToCreateDto.articleNumber(), tenantId);
     }
 
     @Override
-    public void validateProductToCreate(final ProductToCreateDto dto) {
-        log.info("Validating product to create: {}", dto);
-        final List<ValidationRule<ProductToCreateDto>> rules = List.of(
-                new ValidationRule<>(
-                        productToCreateDto -> isProductNameAvailable(productToCreateDto.name()),
-                        productToCreateDto -> String.format("Product name: '%s' is already taken", productToCreateDto.name())
-                ),
-                new ValidationRule<>(
-                        productToCreateDto -> isArticleNumberAvailable(productToCreateDto.articleNumber()),
-                        productToCreateDto -> String.format("Article number: '%s' is already taken", productToCreateDto.articleNumber())
-                ),
-                new ValidationRule<>(
-                        productToCreateDto -> productToCreateDto.price() != null && productToCreateDto.price() > 0,
-                        productToCreateDto -> String.format("price: '%s' must be greater than 0", productToCreateDto.price())
-                )
-        );
-        validateWithRules(dto, rules);
-        log.info("Product to create validation successful");
-    }
+    public void validateProductToUpdate(final ProductToUpdateDto productToUpdateDto) {
+        log.info("Validating product to update: id='{}', name='{}', articleNumber='{}', tenantId='{}'",
+                productToUpdateDto.id(), productToUpdateDto.name(), productToUpdateDto.articleNumber(), productToUpdateDto.tenantId());
 
-    @Override
-    public void validateProductToUpdate(final ProductToUpdateDto dto) {
-        log.info("Validating product to update: {}", dto);
+        final List<String> validationErrors = new ArrayList<>();
+        final String tenantId = productToUpdateDto.tenantId();
 
-        final ProductEntity productEntity = productRepository.findById(dto.id())
-                .orElseThrow(() -> new ProductValidationException(
-                        "Product with id: '%s' does not exist".formatted(dto.id())));
+        final ProductEntity existingProduct = productRepository.findById(productToUpdateDto.id())
+                .orElseThrow(() -> new ProductValidationException("Product with id: '" + productToUpdateDto.id() + "' does not exist"));
 
-        final List<ValidationRule<ProductToUpdateDto>> rules = new java.util.ArrayList<>();
-
-        final boolean nameChanged = !Objects.equals(productEntity.getName(), dto.name());
-        if (nameChanged) {
-            addRuleToValidateProductName(rules);
+        if (isNameModified(productToUpdateDto, existingProduct)) {
+            validateNameUniquenessForUpdate(productToUpdateDto.id(), productToUpdateDto.name(), tenantId, validationErrors);
+        }
+        if (isArticleNumberModified(productToUpdateDto, existingProduct)) {
+            validateArticleNumberUniquenessForUpdate(productToUpdateDto.id(), productToUpdateDto.articleNumber(), tenantId, validationErrors);
+        }
+        if (isPriceModified(productToUpdateDto, existingProduct)) {
+            validatePriceGreaterThanZero(productToUpdateDto.price(), validationErrors);
         }
 
-        final boolean articleChanged = isArticleChanged(dto, productEntity);
-        if (articleChanged) {
-            addRuleToValidateArticle(rules);
+        throwIfErrors(validationErrors);
+        log.info("Product update validation passed: id='{}'", productToUpdateDto.id());
+    }
+
+    private boolean isNameModified(final ProductToUpdateDto productToUpdateDto, final ProductEntity existing) {
+        return !Objects.equals(productToUpdateDto.name(), existing.getName());
+    }
+
+    private boolean isArticleNumberModified(final ProductToUpdateDto productToUpdateDto, final ProductEntity existing) {
+        return !Objects.equals(productToUpdateDto.articleNumber(), existing.getArticleNumber());
+    }
+
+    private boolean isPriceModified(final ProductToUpdateDto productToUpdateDto, final ProductEntity existing) {
+        return Double.compare(productToUpdateDto.price(), existing.getPrice().doubleValue()) != 0;
+    }
+
+    private void validateNameUniqueness(final String name, final String tenantId, final List<String> errors) {
+        log.debug("Checking product name uniqueness: name='{}', tenantId='{}'", name, tenantId);
+        if (productRepository.existsByNameAndTenantId(name, tenantId)) {
+            final String message = String.format("Product name: '%s' is already taken", name);
+            log.warn("Validation error: {}", message);
+            errors.add(message);
+        } else {
+            log.debug("Product name is available: name='{}', tenantId='{}'", name, tenantId);
         }
-
-        rules.add(new ValidationRule<>(
-                productToUpdateDto -> productToUpdateDto.price() != null && productToUpdateDto.price() > 0,
-                productToUpdateDto -> "price: '%s' must be greater than 0".formatted(productToUpdateDto.price())
-        ));
-
-        validateWithRules(dto, rules);
-        log.info("Product to update validation successful");
     }
 
-    private void addRuleToValidateProductName(List<ValidationRule<ProductToUpdateDto>> rules) {
-        rules.add(new ValidationRule<>(
-                productToUpdateDto -> !productRepository.existsByNameAndIdNot(productToUpdateDto.name(), productToUpdateDto.id()),
-                productToUpdateDto -> "Product name: '%s' is already taken".formatted(productToUpdateDto.name())
-        ));
+    private void validateArticleNumberUniqueness(final String articleNumber, final String tenantId, final List<String> errors) {
+        log.debug("Checking article number uniqueness: articleNumber='{}', tenantId='{}'", articleNumber, tenantId);
+        if (productRepository.existsByArticleNumberAndTenantId(articleNumber, tenantId)) {
+            final String message = String.format("Article number: '%s' is already taken", articleNumber);
+            log.warn("Validation error: {}", message);
+            errors.add(message);
+        } else {
+            log.debug("Article number is available: articleNumber='{}', tenantId='{}'", articleNumber, tenantId);
+        }
     }
 
-    private boolean isArticleChanged(ProductToUpdateDto dto, ProductEntity productEntity) {
-        return !Objects.equals(productEntity.getArticleNumber(), dto.articleNumber());
+    private void validateNameUniquenessForUpdate(final String productId, final String name, final String tenantId, final List<String> errors) {
+        log.debug("Checking product name uniqueness for update: id='{}', name='{}', tenantId='{}'", productId, name, tenantId);
+        productRepository.findByNameAndTenantId(name, tenantId)
+                .filter(found -> !found.getId().equals(productId))
+                .ifPresent(found -> {
+                    final String message = String.format("Product name: '%s' is already taken", name);
+                    log.warn("Validation error: {}", message);
+                    errors.add(message);
+                });
     }
 
-    private void addRuleToValidateArticle(List<ValidationRule<ProductToUpdateDto>> rules) {
-        rules.add(new ValidationRule<>(
-                productToUpdateDto -> !productRepository.existsByArticleNumberAndIdNot(productToUpdateDto.articleNumber(), productToUpdateDto.id()),
-                productToUpdateDto -> "Article number: '%s' is already taken".formatted(productToUpdateDto.articleNumber())
-        ));
+    private void validateArticleNumberUniquenessForUpdate(final String productId, final String articleNumber, final String tenantId, final List<String> errors) {
+        log.debug("Checking article number uniqueness for update: id='{}', articleNumber='{}', tenantId='{}'", productId, articleNumber, tenantId);
+        productRepository.findByArticleNumberAndTenantId(articleNumber, tenantId)
+                .filter(found -> !found.getId().equals(productId))
+                .ifPresent(found -> {
+                    final String message = String.format("Article number: '%s' is already taken", articleNumber);
+                    log.warn("Validation error: {}", message);
+                    errors.add(message);
+                });
     }
 
-    @Override
-    public boolean isProductNameAvailable(final String name) {
-        return !productRepository.existsByName(name);
+    private void validatePriceGreaterThanZero(final double price, final List<String> errors) {
+        log.debug("Checking price > 0: price='{}'", price);
+        if (price <= 0) {
+            final String message = String.format(Locale.US, "price: '%.2f' must be greater than 0", price);
+            log.warn("Validation error: {}", message);
+            errors.add(message);
+        }
     }
 
-    @Override
-    public boolean isArticleNumberAvailable(final String articleNumber) {
-        return !productRepository.existsByArticleNumber(articleNumber);
-    }
-
-    private <T> void validateWithRules(final T dto, final SequencedCollection<ValidationRule<T>> rules) {
-        final SequencedCollection<String> errors = rules.stream()
-                .filter(rule -> !rule.isValid(dto))
-                .map(rule -> rule.getErrorMessage(dto))
-                .toList();
-
-        if (!errors.isEmpty()) {
-            final String joined = String.join(", ", errors);
-            log.debug("Validation failed with errors: {}", joined);
+    private void throwIfErrors(final List<String> validationErrors) {
+        if (!validationErrors.isEmpty()) {
+            final String joined = String.join(", ", validationErrors);
+            log.warn("Validation failed with {} error(s): {}", validationErrors.size(), joined);
             throw new ProductValidationException(joined);
         }
-
-        log.debug("Validation passed with no errors");
     }
 }

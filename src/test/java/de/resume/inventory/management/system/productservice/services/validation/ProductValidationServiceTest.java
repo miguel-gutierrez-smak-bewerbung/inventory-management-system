@@ -15,10 +15,14 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
+import java.util.Locale;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class ProductValidationServiceTest {
+
+    private static final String TENANT_ID = "Event-tenant";
 
     @Mock
     private ProductRepository productRepository;
@@ -26,26 +30,19 @@ class ProductValidationServiceTest {
     @InjectMocks
     private ProductValidationServiceImpl sut;
 
-    private ProductEntity mockExistingProduct(final String name, final String articleNumber) {
-        final ProductEntity entity = Mockito.mock(ProductEntity.class);
-        Mockito.when(entity.getName()).thenReturn(name);
-        Mockito.when(entity.getArticleNumber()).thenReturn(articleNumber);
-        return entity;
-    }
-
     @Test
     void validateProductToCreate() {
         final String name = "validName";
         final String articleNumber = "PRD-2024-0812";
 
-        final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 2.50, "Event-tenant"
+        final ProductToCreateDto dto = new ProductToCreateDto(
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 2.50, TENANT_ID
         );
 
-        Mockito.when(productRepository.existsByName(name)).thenReturn(false);
-        Mockito.when(productRepository.existsByArticleNumber(articleNumber)).thenReturn(false);
+        Mockito.when(productRepository.existsByNameAndTenantId(name, TENANT_ID)).thenReturn(false);
+        Mockito.when(productRepository.existsByArticleNumberAndTenantId(articleNumber, TENANT_ID)).thenReturn(false);
 
-        Assertions.assertDoesNotThrow(() -> sut.validateProductToCreate(productToCreateDto));
+        Assertions.assertDoesNotThrow(() -> sut.validateProductToCreate(dto));
     }
 
     @Test
@@ -53,20 +50,17 @@ class ProductValidationServiceTest {
         final String name = "duplicateName";
         final String articleNumber = "PRD-2024-0812";
 
-        final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 2.50, "Event-tenant"
+        final ProductToCreateDto dto = new ProductToCreateDto(
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 2.50, TENANT_ID
         );
 
-        Mockito.when(productRepository.existsByName(name)).thenReturn(true);
+        Mockito.when(productRepository.existsByNameAndTenantId(name, TENANT_ID)).thenReturn(true);
 
-        final ProductValidationException productValidationException = Assertions.assertThrows(
-                ProductValidationException.class, () -> sut.validateProductToCreate(productToCreateDto)
+        final ProductValidationException ex = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToCreate(dto)
         );
 
-        final String expectedMessage = String.format("Product name: '%s' is already taken", name);
-        final String actualMessage = productValidationException.getMessage();
-
-        Assertions.assertEquals(expectedMessage, actualMessage);
+        Assertions.assertEquals("Product name: 'duplicateName' is already taken", ex.getMessage());
     }
 
     @Test
@@ -74,21 +68,18 @@ class ProductValidationServiceTest {
         final String name = "duplicateName";
         final String articleNumber = "duplicateArticleNumber";
 
-        final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 2.50, "Event-tenant"
+        final ProductToCreateDto dto = new ProductToCreateDto(
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 2.50, TENANT_ID
         );
 
-        Mockito.when(productRepository.existsByName(name)).thenReturn(false);
-        Mockito.when(productRepository.existsByArticleNumber(articleNumber)).thenReturn(true);
+        Mockito.when(productRepository.existsByNameAndTenantId(name, TENANT_ID)).thenReturn(false);
+        Mockito.when(productRepository.existsByArticleNumberAndTenantId(articleNumber, TENANT_ID)).thenReturn(true);
 
-        final ProductValidationException productValidationException = Assertions.assertThrows(
-                ProductValidationException.class, () -> sut.validateProductToCreate(productToCreateDto)
+        final ProductValidationException ex = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToCreate(dto)
         );
 
-        final String expectedMessage = "Article number: 'duplicateArticleNumber' is already taken";
-        final String actualMessage = productValidationException.getMessage();
-
-        Assertions.assertEquals(expectedMessage, actualMessage);
+        Assertions.assertEquals("Article number: 'duplicateArticleNumber' is already taken", ex.getMessage());
     }
 
     @Test
@@ -97,45 +88,42 @@ class ProductValidationServiceTest {
         final String articleNumber = "PRD-2024-0812";
         final double negativePrice = -1.0;
 
-        final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, negativePrice, "Event-tenant"
+        final ProductToCreateDto dto = new ProductToCreateDto(
+                name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, negativePrice, TENANT_ID
         );
 
-        Mockito.when(productRepository.existsByName(name)).thenReturn(false);
-        Mockito.when(productRepository.existsByArticleNumber(articleNumber)).thenReturn(false);
+        Mockito.when(productRepository.existsByNameAndTenantId(name, TENANT_ID)).thenReturn(false);
+        Mockito.when(productRepository.existsByArticleNumberAndTenantId(articleNumber, TENANT_ID)).thenReturn(false);
 
-        final ProductValidationException productValidationException = Assertions.assertThrows(
-                ProductValidationException.class, () -> sut.validateProductToCreate(productToCreateDto)
+        final ProductValidationException ex = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToCreate(dto)
         );
 
-        final String expectedMessage = "price: '-1.0' must be greater than 0";
-        final String actualMessage = productValidationException.getMessage();
-
-        Assertions.assertEquals(expectedMessage, actualMessage);
+        final String expected = String.format(Locale.US, "price: '%.2f' must be greater than 0", negativePrice);
+        Assertions.assertEquals(expected, ex.getMessage());
     }
 
     @Test
     void validateProductToCreate_shouldCollectAllValidationErrors() {
-
         final String duplicateName = "duplicateName";
         final String duplicateArticleNumber = "duplicateArticleNumber";
         final double negativePrice = -3.0;
 
-        final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                duplicateName, duplicateArticleNumber, null, Category.ELECTRONICS, Unit.PIECE, negativePrice, "Event-tenant"
+        final ProductToCreateDto dto = new ProductToCreateDto(
+                duplicateName, duplicateArticleNumber, null, Category.ELECTRONICS, Unit.PIECE, negativePrice, TENANT_ID
         );
 
-        Mockito.when(productRepository.existsByName(duplicateName)).thenReturn(true);
-        Mockito.when(productRepository.existsByArticleNumber(duplicateArticleNumber)).thenReturn(true);
+        Mockito.when(productRepository.existsByNameAndTenantId(duplicateName, TENANT_ID)).thenReturn(true);
+        Mockito.when(productRepository.existsByArticleNumberAndTenantId(duplicateArticleNumber, TENANT_ID)).thenReturn(true);
 
-        final ProductValidationException productValidationException = Assertions.assertThrows(
-                ProductValidationException.class, () -> sut.validateProductToCreate(productToCreateDto)
+        final ProductValidationException ex = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToCreate(dto)
         );
 
-        final String actualMessage = productValidationException.getMessage();
-        final String expectedMessage = "Product name: 'duplicateName' is already taken, Article number: 'duplicateArticleNumber' " +
-                "is already taken, price: '-3.0' must be greater than 0";
-        Assertions.assertEquals(expectedMessage, actualMessage);
+        final String expected = "Product name: 'duplicateName' is already taken, " +
+                "Article number: 'duplicateArticleNumber' is already taken, " +
+                String.format(Locale.US, "price: '%.2f' must be greater than 0", negativePrice);
+        Assertions.assertEquals(expected, ex.getMessage());
     }
 
     @Test
@@ -145,10 +133,10 @@ class ProductValidationServiceTest {
         final String articleNumber = "PRD-2024-0812";
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99, "Event-tenant"
+                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99, TENANT_ID
         );
 
-        final ProductEntity existing = mockExistingProduct(name, articleNumber);
+        final ProductEntity existing = existingEntity(id, name, articleNumber, 5.99);
         Mockito.when(productRepository.findById(id)).thenReturn(Optional.of(existing));
 
         Assertions.assertDoesNotThrow(() -> sut.validateProductToUpdate(dto));
@@ -157,47 +145,47 @@ class ProductValidationServiceTest {
     @Test
     void validateProductToUpdate_shouldThrowOnDuplicateName() {
         final String id = "1L";
-        final String name = "duplicateName";
+        final String newName = "duplicateName";
         final String articleNumber = "PRD-2024-0812";
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99, "Event-tenant"
+                id, newName, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99, TENANT_ID
         );
 
-        final ProductEntity existing = mockExistingProduct("oldName", articleNumber);
+        final ProductEntity existing = existingEntity(id, "oldName", articleNumber, 5.99);
+        final ProductEntity conflicting = existingEntity("2L", newName, "ANY", 10.00);
+
         Mockito.when(productRepository.findById(id)).thenReturn(Optional.of(existing));
-        Mockito.when(productRepository.existsByNameAndIdNot(name, id)).thenReturn(true);
+        Mockito.when(productRepository.findByNameAndTenantId(newName, TENANT_ID)).thenReturn(Optional.of(conflicting));
 
-        final ProductValidationException exception = Assertions.assertThrows(
-                ProductValidationException.class,
-                () -> sut.validateProductToUpdate(dto)
+        final ProductValidationException ex = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToUpdate(dto)
         );
 
-        final String expected = String.format("Product name: '%s' is already taken", name);
-        Assertions.assertEquals(expected, exception.getMessage());
+        Assertions.assertEquals("Product name: 'duplicateName' is already taken", ex.getMessage());
     }
 
     @Test
     void validateProductToUpdate_shouldThrowOnDuplicateArticleNumber() {
         final String id = "1L";
         final String name = "validName";
-        final String articleNumber = "duplicateArticleNumber";
+        final String newArticleNumber = "duplicateArticleNumber";
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99, "Event-tenant"
+                id, name, newArticleNumber, null, Category.ELECTRONICS, Unit.PIECE, 5.99, TENANT_ID
         );
 
-        final ProductEntity existing = mockExistingProduct(name, "OLD-ART" );
+        final ProductEntity existing = existingEntity(id, name, "OLD-ART", 5.99);
+        final ProductEntity conflicting = existingEntity("2L", "ANY", newArticleNumber, 10.00);
+
         Mockito.when(productRepository.findById(id)).thenReturn(Optional.of(existing));
-        Mockito.when(productRepository.existsByArticleNumberAndIdNot(articleNumber, id)).thenReturn(true);
+        Mockito.when(productRepository.findByArticleNumberAndTenantId(newArticleNumber, TENANT_ID)).thenReturn(Optional.of(conflicting));
 
-        final ProductValidationException exception = Assertions.assertThrows(
-                ProductValidationException.class,
-                () -> sut.validateProductToUpdate(dto)
+        final ProductValidationException ex = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToUpdate(dto)
         );
 
-        final String expected = String.format("Article number: '%s' is already taken", articleNumber);
-        Assertions.assertEquals(expected, exception.getMessage());
+        Assertions.assertEquals("Article number: 'duplicateArticleNumber' is already taken", ex.getMessage());
     }
 
     @Test
@@ -205,47 +193,61 @@ class ProductValidationServiceTest {
         final String id = "1L";
         final String name = "validName";
         final String articleNumber = "PRD-2024-0812";
+        final double invalidPrice = -9.99;
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, -9.99, "Event-tenant"
+                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, invalidPrice, TENANT_ID
         );
 
-        final ProductEntity existing = mockExistingProduct(name, articleNumber);
+        final ProductEntity existing = existingEntity(id, name, articleNumber, 5.99);
         Mockito.when(productRepository.findById(id)).thenReturn(Optional.of(existing));
 
-        final ProductValidationException exception = Assertions.assertThrows(
-                ProductValidationException.class,
-                () -> sut.validateProductToUpdate(dto)
+        final ProductValidationException ex = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToUpdate(dto)
         );
 
-        final String expected = "price: '-9.99' must be greater than 0";
-        Assertions.assertEquals(expected, exception.getMessage());
+        final String expected = String.format(Locale.US, "price: '%.2f' must be greater than 0", invalidPrice);
+        Assertions.assertEquals(expected, ex.getMessage());
     }
 
     @Test
     void validateProductToUpdate_shouldCollectAllValidationErrors() {
         final String id = "1L";
-        final String name = "duplicateName";
-        final String articleNumber = "duplicateArticleNumber";
-        final double price = -3.0;
+        final String newName = "duplicateName";
+        final String newArticleNumber = "duplicateArticleNumber";
+        final double newPrice = -3.0;
 
         final ProductToUpdateDto dto = new ProductToUpdateDto(
-                id, name, articleNumber, null, Category.ELECTRONICS, Unit.PIECE, price, "Event-tenant"
+                id, newName, newArticleNumber, null, Category.ELECTRONICS, Unit.PIECE, newPrice, TENANT_ID
         );
 
-        final ProductEntity existing = mockExistingProduct("oldName", "OLD-ART"); // both changed
-        Mockito.when(productRepository.findById(id)).thenReturn(Optional.of(existing));
-        Mockito.when(productRepository.existsByNameAndIdNot(name, id)).thenReturn(true);
-        Mockito.when(productRepository.existsByArticleNumberAndIdNot(articleNumber, id)).thenReturn(true);
+        final ProductEntity existing = existingEntity(id, "oldName", "OLD-ART", 5.99);
+        final ProductEntity nameConflict = existingEntity("2L", newName, "ANY", 10.00);
+        final ProductEntity articleConflict = existingEntity("3L", "ANY2", newArticleNumber, 20.00);
 
-        final ProductValidationException exception = Assertions.assertThrows(
-                ProductValidationException.class,
-                () -> sut.validateProductToUpdate(dto)
+        Mockito.when(productRepository.findById(id)).thenReturn(Optional.of(existing));
+        Mockito.when(productRepository.findByNameAndTenantId(newName, TENANT_ID)).thenReturn(Optional.of(nameConflict));
+        Mockito.when(productRepository.findByArticleNumberAndTenantId(newArticleNumber, TENANT_ID)).thenReturn(Optional.of(articleConflict));
+
+        final ProductValidationException productValidationException = Assertions.assertThrows(
+                ProductValidationException.class, () -> sut.validateProductToUpdate(dto)
         );
 
         final String expected = "Product name: 'duplicateName' is already taken, " +
                 "Article number: 'duplicateArticleNumber' is already taken, " +
-                "price: '-3.0' must be greater than 0";
-        Assertions.assertEquals(expected, exception.getMessage());
+                String.format(Locale.US, "price: '%.2f' must be greater than 0", newPrice);
+        Assertions.assertEquals(expected, productValidationException.getMessage());
+    }
+
+    private ProductEntity existingEntity(final String id,
+                                         final String name,
+                                         final String articleNumber,
+                                         final double price) {
+        final ProductEntity productEntity = new ProductEntity();
+        productEntity.setId(id);
+        productEntity.setName(name);
+        productEntity.setArticleNumber(articleNumber);
+        productEntity.setPrice(BigDecimal.valueOf(price));
+        return productEntity;
     }
 }
