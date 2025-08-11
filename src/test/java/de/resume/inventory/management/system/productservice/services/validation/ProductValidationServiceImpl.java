@@ -17,7 +17,7 @@ import java.util.Objects;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProductValidationServiceImpl implements ProductValidationService {
+final class ProductValidationServiceImpl implements ProductValidationService {
 
     private final ProductRepository productRepository;
 

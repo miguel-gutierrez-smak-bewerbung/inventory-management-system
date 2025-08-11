@@ -42,7 +42,6 @@ class ProductHistoryServiceTest {
         final Category productCategory = Category.ELECTRONICS;
         final Unit productUnit = Unit.PIECE;
         final BigDecimal productPrice = BigDecimal.valueOf(19.95);
-        final String tenantIdentifier = "Event-tenant";
         final ProductAction productAction = ProductAction.CREATED;
         final String changedBy = "john.doe@example.com";
 
@@ -52,8 +51,7 @@ class ProductHistoryServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                productPrice,
-                tenantIdentifier
+                productPrice
         );
         productEntity.setId(productIdentifier);
 
@@ -66,7 +64,6 @@ class ProductHistoryServiceTest {
         expectedHistoryEntity.setCategory(productCategory);
         expectedHistoryEntity.setUnit(productUnit);
         expectedHistoryEntity.setPrice(productPrice);
-        expectedHistoryEntity.setTenantId(tenantIdentifier);
         expectedHistoryEntity.setAction(productAction);
         expectedHistoryEntity.setChangedBy(changedBy);
 
@@ -107,7 +104,6 @@ class ProductHistoryServiceTest {
         final Category productCategory = Category.HOUSEHOLD;
         final Unit productUnit = Unit.PIECE;
         final BigDecimal productPrice = BigDecimal.valueOf(79.00);
-        final String tenantIdentifier = "Event-tenant";
         final String changedBy = "integration.user@example.com";
 
         final ProductEntity productEntity = new ProductEntity(
@@ -116,8 +112,7 @@ class ProductHistoryServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                productPrice,
-                tenantIdentifier
+                productPrice
         );
         productEntity.setId(productIdentifier);
 
@@ -130,7 +125,6 @@ class ProductHistoryServiceTest {
         expectedHistoryEntity.setCategory(productCategory);
         expectedHistoryEntity.setUnit(productUnit);
         expectedHistoryEntity.setPrice(productPrice);
-        expectedHistoryEntity.setTenantId(tenantIdentifier);
         expectedHistoryEntity.setAction(parameterProductAction);
         expectedHistoryEntity.setChangedBy(changedBy);
 
@@ -156,7 +150,6 @@ class ProductHistoryServiceTest {
         final Category productCategory = Category.HOUSEHOLD;
         final Unit productUnit = Unit.PIECE;
         final BigDecimal productPrice = BigDecimal.valueOf(59.90);
-        final String tenantIdentifier = "Event-tenant";
         final ProductAction productAction = ProductAction.UPDATED;
         final String changedBy = "alice.smith@example.com";
 
@@ -166,8 +159,7 @@ class ProductHistoryServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                productPrice,
-                tenantIdentifier
+                productPrice
         );
         productEntity.setId(productIdentifier);
 
@@ -180,7 +172,6 @@ class ProductHistoryServiceTest {
         mappedHistoryEntity.setCategory(productCategory);
         mappedHistoryEntity.setUnit(productUnit);
         mappedHistoryEntity.setPrice(productPrice);
-        mappedHistoryEntity.setTenantId(tenantIdentifier);
         mappedHistoryEntity.setAction(productAction);
         mappedHistoryEntity.setChangedBy(changedBy);
 

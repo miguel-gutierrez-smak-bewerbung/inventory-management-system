@@ -11,6 +11,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @MappedSuperclass
@@ -18,7 +19,7 @@ public class BaseEntity implements Serializable {
 
     @Id
     @UuidGenerator(style = UuidGenerator.Style.RANDOM)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "id", updatable = false, nullable = false, length = 36)
     private String id;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")

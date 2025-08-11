@@ -25,7 +25,6 @@ class ProductHistoryMapperTest {
         final Category expectedCategory = Category.ELECTRONICS;
         final Unit expectedUnit = Unit.PIECE;
         final BigDecimal expectedPrice = BigDecimal.valueOf(14.95);
-        final String expectedTenantIdentifier = "Event-tenant";
         final ProductAction expectedProductAction = ProductAction.CREATED;
         final String expectedChangedBy = "john.doe@example.com";
 
@@ -35,15 +34,13 @@ class ProductHistoryMapperTest {
                 expectedDescription,
                 expectedCategory,
                 expectedUnit,
-                expectedPrice,
-                expectedTenantIdentifier
+                expectedPrice
         );
         sourceProduct.setId(expectedProductIdentifier);
 
         final ProductHistoryEntity actual = sut.toEntity(sourceProduct, expectedProductAction, expectedChangedBy);
 
         final ProductHistoryEntity expected = new ProductHistoryEntity();
-        expected.setId(expectedProductIdentifier);
         expected.setProductId(expectedProductIdentifier);
         expected.setName(expectedName);
         expected.setArticleNumber(expectedArticleNumber);
@@ -51,11 +48,13 @@ class ProductHistoryMapperTest {
         expected.setCategory(expectedCategory);
         expected.setUnit(expectedUnit);
         expected.setPrice(expectedPrice);
-        expected.setTenantId(expectedTenantIdentifier);
         expected.setAction(expectedProductAction);
         expected.setChangedBy(expectedChangedBy);
 
-        Assertions.assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        Assertions.assertThat(actual)
+                .usingRecursiveComparison()
+                .ignoringFields("id", "createdAt", "updatedAt")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -67,7 +66,6 @@ class ProductHistoryMapperTest {
         final Category expectedCategory = Category.HOUSEHOLD;
         final Unit expectedUnit = Unit.PIECE;
         final BigDecimal expectedPrice = BigDecimal.valueOf(59.90);
-        final String expectedTenantIdentifier = "Event-tenant";
         final ProductAction expectedProductAction = ProductAction.UPDATED;
         final String expectedChangedBy = "alice.smith@example.com";
 
@@ -77,15 +75,13 @@ class ProductHistoryMapperTest {
                 expectedDescription,
                 expectedCategory,
                 expectedUnit,
-                expectedPrice,
-                expectedTenantIdentifier
+                expectedPrice
         );
         sourceProduct.setId(expectedProductIdentifier);
 
         final ProductHistoryEntity actual = sut.toEntity(sourceProduct, expectedProductAction, expectedChangedBy);
 
         final ProductHistoryEntity expected = new ProductHistoryEntity();
-        expected.setId(expectedProductIdentifier);
         expected.setProductId(expectedProductIdentifier);
         expected.setName(expectedName);
         expected.setArticleNumber(expectedArticleNumber);
@@ -93,11 +89,13 @@ class ProductHistoryMapperTest {
         expected.setCategory(expectedCategory);
         expected.setUnit(expectedUnit);
         expected.setPrice(expectedPrice);
-        expected.setTenantId(expectedTenantIdentifier);
         expected.setAction(expectedProductAction);
         expected.setChangedBy(expectedChangedBy);
 
-        Assertions.assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        Assertions.assertThat(actual)
+                .usingRecursiveComparison()
+                .ignoringFields("id", "createdAt", "updatedAt")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -109,7 +107,6 @@ class ProductHistoryMapperTest {
         final Category expectedCategory = Category.HEALTH;
         final Unit expectedUnit = Unit.PIECE;
         final BigDecimal expectedPrice = BigDecimal.valueOf(129.00);
-        final String expectedTenantIdentifier = "Event-tenant";
         final ProductAction expectedProductAction = ProductAction.CREATED;
         final String expectedChangedBy = null;
 
@@ -119,15 +116,13 @@ class ProductHistoryMapperTest {
                 expectedDescription,
                 expectedCategory,
                 expectedUnit,
-                expectedPrice,
-                expectedTenantIdentifier
+                expectedPrice
         );
         sourceProduct.setId(expectedProductIdentifier);
 
         final ProductHistoryEntity actual = sut.toEntity(sourceProduct, expectedProductAction, expectedChangedBy);
 
         final ProductHistoryEntity expected = new ProductHistoryEntity();
-        expected.setId(expectedProductIdentifier);
         expected.setProductId(expectedProductIdentifier);
         expected.setName(expectedName);
         expected.setArticleNumber(expectedArticleNumber);
@@ -135,11 +130,13 @@ class ProductHistoryMapperTest {
         expected.setCategory(expectedCategory);
         expected.setUnit(expectedUnit);
         expected.setPrice(expectedPrice);
-        expected.setTenantId(expectedTenantIdentifier);
         expected.setAction(expectedProductAction);
         expected.setChangedBy(null);
 
-        Assertions.assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        Assertions.assertThat(actual)
+                .usingRecursiveComparison()
+                .ignoringFields("id", "createdAt", "updatedAt")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -151,7 +148,6 @@ class ProductHistoryMapperTest {
         final Category expectedCategory = Category.ELECTRONICS;
         final Unit expectedUnit = Unit.PIECE;
         final BigDecimal expectedPrice = BigDecimal.valueOf(24.50);
-        final String expectedTenantIdentifier = "Event-tenant";
         final ProductAction expectedProductAction = null;
         final String expectedChangedBy = "qa.tester@example.com";
 
@@ -161,15 +157,13 @@ class ProductHistoryMapperTest {
                 expectedDescription,
                 expectedCategory,
                 expectedUnit,
-                expectedPrice,
-                expectedTenantIdentifier
+                expectedPrice
         );
         sourceProduct.setId(expectedProductIdentifier);
 
         final ProductHistoryEntity actual = sut.toEntity(sourceProduct, expectedProductAction, expectedChangedBy);
 
         final ProductHistoryEntity expected = new ProductHistoryEntity();
-        expected.setId(expectedProductIdentifier);
         expected.setProductId(expectedProductIdentifier);
         expected.setName(expectedName);
         expected.setArticleNumber(expectedArticleNumber);
@@ -177,11 +171,13 @@ class ProductHistoryMapperTest {
         expected.setCategory(expectedCategory);
         expected.setUnit(expectedUnit);
         expected.setPrice(expectedPrice);
-        expected.setTenantId(expectedTenantIdentifier);
         expected.setAction(null);
         expected.setChangedBy(expectedChangedBy);
 
-        Assertions.assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        Assertions.assertThat(actual)
+                .usingRecursiveComparison()
+                .ignoringFields("id", "createdAt", "updatedAt")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -193,7 +189,6 @@ class ProductHistoryMapperTest {
         final Category expectedCategory = Category.TOYS;
         final Unit expectedUnit = Unit.PIECE;
         final BigDecimal expectedPrice = BigDecimal.valueOf(1.00);
-        final String expectedTenantIdentifier = "";
         final ProductAction expectedProductAction = ProductAction.UPDATED;
         final String expectedChangedBy = "";
 
@@ -203,15 +198,13 @@ class ProductHistoryMapperTest {
                 expectedDescription,
                 expectedCategory,
                 expectedUnit,
-                expectedPrice,
-                expectedTenantIdentifier
+                expectedPrice
         );
         sourceProduct.setId(expectedProductIdentifier);
 
         final ProductHistoryEntity actual = sut.toEntity(sourceProduct, expectedProductAction, expectedChangedBy);
 
         final ProductHistoryEntity expected = new ProductHistoryEntity();
-        expected.setId(expectedProductIdentifier);
         expected.setProductId(expectedProductIdentifier);
         expected.setName("");
         expected.setArticleNumber("");
@@ -219,11 +212,13 @@ class ProductHistoryMapperTest {
         expected.setCategory(expectedCategory);
         expected.setUnit(expectedUnit);
         expected.setPrice(expectedPrice);
-        expected.setTenantId("");
         expected.setAction(expectedProductAction);
         expected.setChangedBy("");
 
-        Assertions.assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        Assertions.assertThat(actual)
+                .usingRecursiveComparison()
+                .ignoringFields("id", "createdAt", "updatedAt")
+                .isEqualTo(expected);
     }
 
     @ParameterizedTest
@@ -236,7 +231,6 @@ class ProductHistoryMapperTest {
         final Category expectedCategory = Category.HOUSEHOLD;
         final Unit expectedUnit = Unit.PIECE;
         final BigDecimal expectedPrice = BigDecimal.valueOf(79.00);
-        final String expectedTenantIdentifier = "Event-tenant";
         final String expectedChangedBy = "integration.user@example.com";
 
         final ProductEntity sourceProduct = new ProductEntity(
@@ -245,15 +239,13 @@ class ProductHistoryMapperTest {
                 expectedDescription,
                 expectedCategory,
                 expectedUnit,
-                expectedPrice,
-                expectedTenantIdentifier
+                expectedPrice
         );
         sourceProduct.setId(expectedProductIdentifier);
 
         final ProductHistoryEntity actual = sut.toEntity(sourceProduct, parameterProductAction, expectedChangedBy);
 
         final ProductHistoryEntity expected = new ProductHistoryEntity();
-        expected.setId(expectedProductIdentifier);
         expected.setProductId(expectedProductIdentifier);
         expected.setName(expectedName);
         expected.setArticleNumber(expectedArticleNumber);
@@ -261,11 +253,13 @@ class ProductHistoryMapperTest {
         expected.setCategory(expectedCategory);
         expected.setUnit(expectedUnit);
         expected.setPrice(expectedPrice);
-        expected.setTenantId(expectedTenantIdentifier);
         expected.setAction(parameterProductAction);
         expected.setChangedBy(expectedChangedBy);
 
-        Assertions.assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        Assertions.assertThat(actual)
+                .usingRecursiveComparison()
+                .ignoringFields("id", "createdAt", "updatedAt")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -277,7 +271,6 @@ class ProductHistoryMapperTest {
         final Category expectedCategory = Category.ELECTRONICS;
         final Unit expectedUnit = Unit.PIECE;
         final BigDecimal expectedPrice = new BigDecimal("1234567890.123456789");
-        final String expectedTenantIdentifier = "Event-tenant";
         final ProductAction expectedProductAction = ProductAction.UPDATED;
         final String expectedChangedBy = "finance.user@example.com";
 
@@ -287,15 +280,13 @@ class ProductHistoryMapperTest {
                 expectedDescription,
                 expectedCategory,
                 expectedUnit,
-                expectedPrice,
-                expectedTenantIdentifier
+                expectedPrice
         );
         sourceProduct.setId(expectedProductIdentifier);
 
         final ProductHistoryEntity actual = sut.toEntity(sourceProduct, expectedProductAction, expectedChangedBy);
 
         final ProductHistoryEntity expected = new ProductHistoryEntity();
-        expected.setId(expectedProductIdentifier);
         expected.setProductId(expectedProductIdentifier);
         expected.setName(expectedName);
         expected.setArticleNumber(expectedArticleNumber);
@@ -303,11 +294,13 @@ class ProductHistoryMapperTest {
         expected.setCategory(expectedCategory);
         expected.setUnit(expectedUnit);
         expected.setPrice(expectedPrice);
-        expected.setTenantId(expectedTenantIdentifier);
         expected.setAction(expectedProductAction);
         expected.setChangedBy(expectedChangedBy);
 
-        Assertions.assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        Assertions.assertThat(actual)
+                .usingRecursiveComparison()
+                .ignoringFields("id", "createdAt", "updatedAt")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -327,10 +320,12 @@ class ProductHistoryMapperTest {
         expected.setCategory(null);
         expected.setUnit(null);
         expected.setPrice(null);
-        expected.setTenantId(null);
         expected.setAction(ProductAction.DELETED);
         expected.setChangedBy("system.user@example.com");
 
-        Assertions.assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        Assertions.assertThat(actual)
+                .usingRecursiveComparison()
+                .ignoringFields("id", "createdAt", "updatedAt")
+                .isEqualTo(expected);
     }
 }

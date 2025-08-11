@@ -5,6 +5,8 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.testcontainers.containers.PostgreSQLContainer;
 
+import java.time.Duration;
+
 @TestConfiguration(proxyBeanMethods = false)
 public class TestContainerConfiguration {
 
@@ -16,7 +18,7 @@ public class TestContainerConfiguration {
                 .withUsername("postgres")
                 .withPassword("test")
                 .withReuse(true)
-                .withStartupTimeout(java.time.Duration.ofMinutes(2))
+                .withStartupTimeout(Duration.ofMinutes(2))
                 .withInitScript("init.sql")
                 .withCommand("postgres", "-c", "fsync=off", "-c", "max_connections=100");
 

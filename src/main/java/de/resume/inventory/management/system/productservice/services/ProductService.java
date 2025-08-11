@@ -9,8 +9,8 @@ import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 
 public interface ProductService {
-    void createProduct(final ProductToCreateDto productToCreateDto);
-    void updateProduct(final ProductToUpdateDto productToCreateDto);
+    Product createProduct(final ProductToCreateDto productToCreateDto);
+    Product updateProduct(final ProductToUpdateDto productToCreateDto);
     void deleteProduct(final String id);
     Page<Product> getAllProducts(final Pageable pageable);
     Optional<Product> getProductById(final String id);

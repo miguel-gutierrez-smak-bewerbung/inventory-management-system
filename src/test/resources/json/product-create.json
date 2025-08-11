@@ -1,0 +1,8 @@
+{
+  "name": "IntegrationTest Product",
+  "articleNumber": "Art-100",
+  "description": "Test description",
+  "category": "ELECTRONICS",
+  "unit": "PIECE",
+  "price": 12.50
+}
