@@ -21,12 +21,11 @@ public interface ProductMapper {
     @Mapping(target = "category", source = "category")
     @Mapping(target = "unit", source = "unit")
     @Mapping(target = "price", source = "price")
-    @Mapping(target = "tenantId", source = "tenantId")
     ProductEntity toEntity(final ProductToUpdateDto toUpdateDto);
 
     @Mapping(target = "timestamp", source = "productEntity.updatedAt")
     @Mapping(target = "productAction", source = "productAction")
-    ProductUpsertedEvent toEvent(final ProductEntity productEntity, final ProductAction productAction);
+    ProductUpsertedEvent toEvent(final ProductEntity productEntity, final ProductAction productAction, final String tenantId);
 
     ProductToUpdateDto toUpdateDto(final ProductEntity productEntity);
 

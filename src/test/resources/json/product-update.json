@@ -1,0 +1,9 @@
+{
+  "id": "${ID}",
+  "name": "IntegrationTest Product Updated",
+  "articleNumber": "Art-100",
+  "description": "Updated description",
+  "category": "ELECTRONICS",
+  "unit": "PIECE",
+  "price": 19.90
+}

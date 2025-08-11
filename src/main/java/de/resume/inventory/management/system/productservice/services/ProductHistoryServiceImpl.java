@@ -9,6 +9,8 @@ import de.resume.inventory.management.system.productservice.exceptions.ProductVa
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -20,6 +22,7 @@ class ProductHistoryServiceImpl implements ProductHistoryService {
     private final ProductHistoryMapper productHistoryMapper;
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveProductHistory(final ProductEntity productEntity, final ProductAction productAction, final String changedBy) {
         final ProductEntity nonNullProductEntity = Optional.ofNullable(productEntity)
                 .orElseThrow(() -> new ProductValidationException("product entity must not be null"));

@@ -1,5 +1,6 @@
 package de.resume.inventory.management.system.productservice.services;
 
+import de.resume.inventory.management.system.productservice.exceptions.ProductNotFoundException;
 import de.resume.inventory.management.system.productservice.mapper.ProductMapper;
 import de.resume.inventory.management.system.productservice.models.domain.Product;
 import de.resume.inventory.management.system.productservice.models.dtos.ProductToCreateDto;
@@ -12,13 +13,13 @@ import de.resume.inventory.management.system.productservice.repositories.Product
 import de.resume.inventory.management.system.productservice.services.publisher.ProductEventPublisher;
 import de.resume.inventory.management.system.productservice.services.resolver.EventKeyResolver;
 import de.resume.inventory.management.system.productservice.services.validation.ProductValidationService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -41,7 +42,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public void createProduct(final ProductToCreateDto productToCreateDto) {
+    public Product createProduct(final ProductToCreateDto productToCreateDto) {
         log.info("Creating product from dto: {}", productToCreateDto);
 
         productValidationService.validateProductToCreate(productToCreateDto);
@@ -51,17 +52,18 @@ public class ProductServiceImpl implements ProductService {
         productHistoryService.saveProductHistory(savedProduct, ProductAction.CREATED, tenantId);
         log.info("Persisted product with ID: {}", savedProduct.getId());
 
-        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, ProductAction.CREATED);
+        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, ProductAction.CREATED, tenantId);
         final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, savedProduct.getId());
         log.info("Publishing ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
 
         productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
-        log.info("Publishied ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
+        log.info("Published ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
+        return productMapper.toDomain(savedProduct);
     }
 
     @Override
     @Transactional
-    public void updateProduct(final ProductToUpdateDto productToUpdateDto) {
+    public Product updateProduct(final ProductToUpdateDto productToUpdateDto) {
         log.info("Updating product from dto: {}", productToUpdateDto);
 
         productValidationService.validateProductToUpdate(productToUpdateDto);
@@ -79,11 +81,12 @@ public class ProductServiceImpl implements ProductService {
         final ProductAction productAction = exists ? ProductAction.UPDATED : ProductAction.CREATED;
         productHistoryService.saveProductHistory(savedProduct, productAction, tenantId);
 
-        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, productAction);
+        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, productAction, tenantId);
         final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, savedProduct.getId());
         productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
 
         log.info("Persisted product with ID: {} and published {} event", savedProduct.getId(), productAction);
+        return productMapper.toDomain(savedProduct);
     }
 
     @Override
@@ -94,14 +97,9 @@ public class ProductServiceImpl implements ProductService {
         }
 
        log.info("Deleting product with ID: {}", id);
-       final Optional<ProductEntity> productEntityOptional = productRepository.findById(id);
+        final ProductEntity productEntity = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
 
-       if (productEntityOptional.isEmpty()) {
-           log.warn("Product with ID {} does not exist. Skipping deletion.", id);
-           return;
-       }
-
-       final ProductEntity productEntity = productEntityOptional.get();
        productHistoryService.saveProductHistory(productEntity, ProductAction.DELETED, tenantId);
        productRepository.deleteById(productEntity.getId());
 
@@ -114,12 +112,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Product> getAllProducts(final Pageable pageable) {
         final Page<ProductEntity> productEntities = productRepository.findAll(pageable);
         return productEntities.map(productMapper::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Product> getProductById(final String id) {
         return productRepository.findById(id).map(productMapper::toDomain);
     }

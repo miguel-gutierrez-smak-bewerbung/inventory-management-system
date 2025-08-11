@@ -29,12 +29,12 @@ public class ProductHistoryEntity extends BaseEntity {
     @Column(name = "product_action", nullable = false)
     private ProductAction action;
 
-    @Column(name = "name", unique = true, nullable = false, length = 30)
+    @Column(name = "name", nullable = false, length = 30)
     @NotBlank(message = "product name must not be blank")
     @Size(min = 2, max = 30, message = "product name must be between 2 and 30 characters")
     private String name;
 
-    @Column(name = "article_number", unique = true, nullable = false, length = 20)
+    @Column(name = "article_number", nullable = false, length = 20)
     @NotBlank(message = "article number must not be blank")
     @Size(min = 2, max = 20, message = "article number must be between 2 and 20 characters")
     private String articleNumber;
@@ -58,10 +58,6 @@ public class ProductHistoryEntity extends BaseEntity {
     @DecimalMin(value = "0.0", inclusive = false, message = "price must be greater than 0")
     @Digits(integer = 10, fraction = 2, message = "price must be a valid amount with max 2 decimals")
     private BigDecimal price;
-
-    @Column(name = "tenant_id")
-    @NotBlank(message = "tenant id must not be blank")
-    private String tenantId;
 
     @Column(name = "changedBy", nullable = false)
     @NotBlank(message = "changed by must not be blank")

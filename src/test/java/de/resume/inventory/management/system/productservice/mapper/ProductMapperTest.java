@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ContextConfiguration(classes = { ProductMapperImpl.class })
 class ProductMapperTest {
 
-    private final ProductMapper productMapper = new ProductMapperImpl();
+    private final ProductMapper sut = new ProductMapperImpl();
 
     @Test
     void shouldMapProductToCreateDtoToProductEntity() {
@@ -31,8 +31,7 @@ class ProductMapperTest {
                 "This is a test description",
                 Category.ELECTRONICS,
                 Unit.PIECE,
-                99.99,
-                "Event-tenant"
+                99.99
         );
 
         final ProductEntity expected = new ProductEntity(
@@ -41,11 +40,10 @@ class ProductMapperTest {
                 "This is a test description",
                 Category.ELECTRONICS,
                 Unit.PIECE,
-                BigDecimal.valueOf(99.99),
-                "Event-tenant"
+                BigDecimal.valueOf(99.99)
         );
 
-        final ProductEntity actual = productMapper.toEntity(dto);
+        final ProductEntity actual = sut.toEntity(dto);
 
         assertThat(actual).usingRecursiveComparison()
                 .ignoringFields("id", "createdAt", "updatedAt")
@@ -61,8 +59,7 @@ class ProductMapperTest {
                 "Updated description",
                 Category.AUTOMOTIVE,
                 Unit.BOX,
-                199.99,
-                "Event-tenant"
+                199.99
         );
 
         final ProductEntity expected = new ProductEntity(
@@ -71,12 +68,11 @@ class ProductMapperTest {
                 "Updated description",
                 Category.AUTOMOTIVE,
                 Unit.BOX,
-                BigDecimal.valueOf(199.99),
-                "Event-tenant"
+                BigDecimal.valueOf(199.99)
         );
         expected.setId("existing-id");
 
-        final ProductEntity actual = productMapper.toEntity(dto);
+        final ProductEntity actual = sut.toEntity(dto);
 
         assertThat(actual).usingRecursiveComparison()
                 .ignoringFields("createdAt", "updatedAt")
@@ -91,8 +87,7 @@ class ProductMapperTest {
                 "Description",
                 Category.AUTOMOTIVE,
                 Unit.BOX,
-                BigDecimal.valueOf(10.99),
-                "Event-tenant"
+                BigDecimal.valueOf(10.99)
         );
 
         final ProductToCreateDto expected = new ProductToCreateDto(
@@ -101,11 +96,10 @@ class ProductMapperTest {
                 "Description",
                 Category.AUTOMOTIVE,
                 Unit.BOX,
-                10.99,
-                "Event-tenant"
+                10.99
         );
 
-        final ProductToCreateDto actual = productMapper.toCreateDto(entity);
+        final ProductToCreateDto actual = sut.toCreateDto(entity);
 
         assertThat(actual).isEqualTo(expected);
     }
@@ -118,8 +112,7 @@ class ProductMapperTest {
                 "Description",
                 Category.FOOD,
                 Unit.PIECE,
-                BigDecimal.valueOf(25.50),
-                "Event-tenant"
+                BigDecimal.valueOf(25.50)
         );
         entity.setId("test-id");
 
@@ -130,11 +123,10 @@ class ProductMapperTest {
                 "Description",
                 Category.FOOD,
                 Unit.PIECE,
-                25.50,
-                "Event-tenant"
+                25.50
         );
 
-        final ProductToUpdateDto actual = productMapper.toUpdateDto(entity);
+        final ProductToUpdateDto actual = sut.toUpdateDto(entity);
 
         assertThat(actual).isEqualTo(expected);
     }
@@ -147,12 +139,12 @@ class ProductMapperTest {
                 "Event-basiert",
                 Category.ELECTRONICS,
                 Unit.PIECE,
-                BigDecimal.valueOf(999.00),
-                "Event-tenant"
+                BigDecimal.valueOf(999.00)
         );
         entity.setId("product-123");
         entity.setUpdatedAt(LocalDateTime.of(2025, 8, 6, 14, 20));
 
+        final String tenantId = "Event-tenant";
         final ProductUpsertedEvent expected = new ProductUpsertedEvent(
                 "product-123",
                 "Kafka-Produkt",
@@ -163,10 +155,10 @@ class ProductMapperTest {
                 "Event-basiert",
                 LocalDateTime.of(2025, 8, 6, 14, 20),
                 ProductAction.CREATED,
-                "Event-tenant"
+                tenantId
         );
 
-        final ProductUpsertedEvent actual = productMapper.toEvent(entity, ProductAction.CREATED);
+        final ProductUpsertedEvent actual = sut.toEvent(entity, ProductAction.CREATED, tenantId);
 
         assertThat(actual).usingRecursiveComparison()
                 .ignoringFields("action")
@@ -179,7 +171,7 @@ class ProductMapperTest {
         entity.setId("product-1");
         entity.setUpdatedAt(LocalDateTime.of(2025, 8, 6, 14, 20));
 
-        final ProductUpsertedEvent message = productMapper.toEvent(entity, ProductAction.CREATED);
+        final ProductUpsertedEvent message = sut.toEvent(entity, ProductAction.CREATED, "Event-tenant");
 
         assertThat(message.timestamp()).isEqualTo(entity.getUpdatedAt());
     }
