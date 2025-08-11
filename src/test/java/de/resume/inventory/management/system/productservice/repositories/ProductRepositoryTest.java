@@ -160,7 +160,6 @@ class ProductRepositoryTest {
         entity.setCategory(Category.ELECTRONICS);
         entity.setUnit(Unit.PIECE);
         entity.setPrice(new BigDecimal("10.0"));
-        entity.setTenantId("Event-tenant");
         return entity;
     }
 

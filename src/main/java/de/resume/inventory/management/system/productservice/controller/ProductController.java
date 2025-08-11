@@ -28,8 +28,7 @@ public class ProductController implements ProductControllerApi {
 
     @Override
     public ResponseEntity<Product> create(final ProductToCreateDto productToCreateDto) {
-        log.info("HTTP POST /products — creating product. articleNumber={}, tenantId={}",
-                productToCreateDto.articleNumber(), productToCreateDto.tenantId());
+        log.info("HTTP POST /products — creating product. articleNumber={}", productToCreateDto.articleNumber());
 
         final Product created = productService.createProduct(productToCreateDto);
 
@@ -44,8 +43,8 @@ public class ProductController implements ProductControllerApi {
 
     @Override
     public ResponseEntity<Product> update(final ProductToUpdateDto productToUpdateDto) {
-        log.info("HTTP PUT /products — updating product. id={}, articleNumber={}, tenantId={}",
-                productToUpdateDto.id(), productToUpdateDto.articleNumber(), productToUpdateDto.tenantId());
+        log.info("HTTP PUT /products — updating product. id={}, articleNumber={}",
+                productToUpdateDto.id(), productToUpdateDto.articleNumber());
 
         final Product updated = productService.updateProduct(productToUpdateDto);
 

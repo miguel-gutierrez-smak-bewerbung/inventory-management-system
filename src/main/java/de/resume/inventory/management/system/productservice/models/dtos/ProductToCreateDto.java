@@ -26,8 +26,5 @@ public record ProductToCreateDto(
         @NotNull(message = "price must not be null")
         @DecimalMin(value = "0.0", inclusive = false, message = "price must be greater than 0")
         @Digits(integer = 10, fraction = 2, message = "price must be a valid amount with max 2 decimals")
-        Double price,
-
-        @NotBlank(message = "tenant id must not be blank")
-        String tenantId
+        Double price
 ) {}

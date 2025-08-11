@@ -52,7 +52,7 @@ public class ProductServiceImpl implements ProductService {
         productHistoryService.saveProductHistory(savedProduct, ProductAction.CREATED, tenantId);
         log.info("Persisted product with ID: {}", savedProduct.getId());
 
-        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, ProductAction.CREATED);
+        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, ProductAction.CREATED, tenantId);
         final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, savedProduct.getId());
         log.info("Publishing ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
 
@@ -81,7 +81,7 @@ public class ProductServiceImpl implements ProductService {
         final ProductAction productAction = exists ? ProductAction.UPDATED : ProductAction.CREATED;
         productHistoryService.saveProductHistory(savedProduct, productAction, tenantId);
 
-        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, productAction);
+        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, productAction, tenantId);
         final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, savedProduct.getId());
         productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
 

@@ -80,8 +80,7 @@ class ProductServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                productPrice,
-                tenantIdentifier
+                productPrice
         );
 
         final ProductEntity mappedProductEntity = new ProductEntity(
@@ -90,8 +89,7 @@ class ProductServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                BigDecimal.valueOf(productPrice),
-                tenantIdentifier
+                BigDecimal.valueOf(productPrice)
         );
 
         final String persistedProductIdentifier = "product-1000";
@@ -102,8 +100,7 @@ class ProductServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                BigDecimal.valueOf(productPrice),
-                tenantIdentifier
+                BigDecimal.valueOf(productPrice)
         );
         persistedProductEntity.setId(persistedProductIdentifier);
         persistedProductEntity.setUpdatedAt(persistedUpdatedAt);
@@ -124,7 +121,7 @@ class ProductServiceTest {
 
         Mockito.when(productMapper.toEntity(productToCreateDto)).thenReturn(mappedProductEntity);
         Mockito.when(productRepository.save(mappedProductEntity)).thenReturn(persistedProductEntity);
-        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED)).thenReturn(productUpsertedEvent);
+        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier)).thenReturn(productUpsertedEvent);
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, persistedProductIdentifier)).thenReturn(expectedKafkaKey);
 
         final Product expectedDomainProduct = Mockito.mock(Product.class);
@@ -136,7 +133,7 @@ class ProductServiceTest {
         Mockito.verify(productValidationService).validateProductToCreate(productToCreateDto);
         Mockito.verify(productMapper).toEntity(productToCreateDto);
         Mockito.verify(productRepository).save(mappedProductEntity);
-        Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.CREATED);
+        Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, persistedProductIdentifier);
         Mockito.verify(productEventPublisher).publishProductUpserted(expectedKafkaKey, productUpsertedEvent);
         Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
@@ -160,8 +157,7 @@ class ProductServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                productPrice,
-                tenantIdentifier
+                productPrice
         );
         final ProductEntity mappedProductEntity = new ProductEntity(
                 productName,
@@ -169,8 +165,7 @@ class ProductServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                BigDecimal.valueOf(productPrice),
-                tenantIdentifier
+                BigDecimal.valueOf(productPrice)
         );
         mappedProductEntity.setId(incomingProductIdentifier);
 
@@ -180,8 +175,7 @@ class ProductServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                BigDecimal.valueOf(productPrice),
-                tenantIdentifier
+                BigDecimal.valueOf(productPrice)
         );
         persistedProductEntity.setId(incomingProductIdentifier);
         final LocalDateTime persistedUpdatedAt = LocalDateTime.of(2025, 2, 5, 9, 30);
@@ -204,7 +198,7 @@ class ProductServiceTest {
         Mockito.when(productMapper.toEntity(productToUpdateDto)).thenReturn(mappedProductEntity);
         Mockito.when(productRepository.existsById(incomingProductIdentifier)).thenReturn(true);
         Mockito.when(productRepository.save(mappedProductEntity)).thenReturn(persistedProductEntity);
-        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.UPDATED)).thenReturn(expectedProductUpsertedEvent);
+        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.UPDATED, tenantIdentifier)).thenReturn(expectedProductUpsertedEvent);
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, incomingProductIdentifier)).thenReturn(expectedKafkaKey);
 
         final Product expectedDomainProduct = Mockito.mock(Product.class);
@@ -216,7 +210,7 @@ class ProductServiceTest {
         Mockito.verify(productValidationService).validateProductToUpdate(productToUpdateDto);
         Mockito.verify(productRepository).existsById(incomingProductIdentifier);
         Mockito.verify(productRepository).save(mappedProductEntity);
-        Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.UPDATED);
+        Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.UPDATED, tenantIdentifier);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, incomingProductIdentifier);
         Mockito.verify(productEventPublisher).publishProductUpserted(expectedKafkaKey, expectedProductUpsertedEvent);
         Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.UPDATED, tenantIdentifier);
@@ -241,8 +235,7 @@ class ProductServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                productPrice,
-                tenantIdentifier
+                productPrice
         );
         final ProductEntity mappedProductEntity = new ProductEntity(
                 productName,
@@ -250,8 +243,7 @@ class ProductServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                BigDecimal.valueOf(productPrice),
-                tenantIdentifier
+                BigDecimal.valueOf(productPrice)
         );
         mappedProductEntity.setId(incomingProductIdentifier);
 
@@ -261,8 +253,7 @@ class ProductServiceTest {
                 productDescription,
                 productCategory,
                 productUnit,
-                BigDecimal.valueOf(productPrice),
-                tenantIdentifier
+                BigDecimal.valueOf(productPrice)
         );
         persistedProductEntity.setId(newPersistedProductIdentifier);
         final LocalDateTime persistedUpdatedAt = LocalDateTime.of(2025, 3, 15, 8, 0);
@@ -285,7 +276,7 @@ class ProductServiceTest {
         Mockito.when(productMapper.toEntity(productToUpdateDto)).thenReturn(mappedProductEntity);
         Mockito.when(productRepository.existsById(incomingProductIdentifier)).thenReturn(false);
         Mockito.when(productRepository.save(mappedProductEntity)).thenReturn(persistedProductEntity);
-        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED)).thenReturn(expectedProductUpsertedEvent);
+        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier)).thenReturn(expectedProductUpsertedEvent);
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, newPersistedProductIdentifier)).thenReturn(expectedKafkaKey);
 
         final Product expectedDomainProduct = Mockito.mock(Product.class);
@@ -297,7 +288,7 @@ class ProductServiceTest {
         Mockito.verify(productValidationService).validateProductToUpdate(productToUpdateDto);
         Mockito.verify(productRepository).existsById(incomingProductIdentifier);
         Mockito.verify(productRepository).save(mappedProductEntity);
-        Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.CREATED);
+        Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, newPersistedProductIdentifier);
         Mockito.verify(productEventPublisher).publishProductUpserted(expectedKafkaKey, expectedProductUpsertedEvent);
         Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
@@ -315,8 +306,7 @@ class ProductServiceTest {
                 "desc",
                 Category.TOYS,
                 Unit.PIECE,
-                BigDecimal.ONE,
-                tenantIdentifier
+                BigDecimal.ONE
         );
         entity.setId(productIdentifier);
 
@@ -363,8 +353,7 @@ class ProductServiceTest {
                 "Time-delay fuse 5x20mm",
                 Category.ELECTRONICS,
                 Unit.PIECE,
-                BigDecimal.valueOf(0.49),
-                "Event-tenant"
+                BigDecimal.valueOf(0.49)
         );
         firstProductEntity.setId("product-6001");
 
@@ -374,8 +363,7 @@ class ProductServiceTest {
                 "Cable ties 200mm black",
                 Category.HOUSEHOLD,
                 Unit.PACKAGE,
-                BigDecimal.valueOf(3.99),
-                "Event-tenant"
+                BigDecimal.valueOf(3.99)
         );
         secondProductEntity.setId("product-6002");
 
@@ -404,8 +392,7 @@ class ProductServiceTest {
                 "Spirit level 40cm",
                 Category.HOUSEHOLD,
                 Unit.PIECE,
-                BigDecimal.valueOf(12.90),
-                "Event-tenant"
+                BigDecimal.valueOf(12.90)
         );
         foundProductEntity.setId(productIdentifier);
 

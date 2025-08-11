@@ -4,6 +4,5 @@
   "description": "Invalid enum test",
   "category": "WRONG_ENUM",
   "unit": "PIECE",
-  "price": 10.00,
-  "tenantId": "Event-tenant"
+  "price": 10.00
 }

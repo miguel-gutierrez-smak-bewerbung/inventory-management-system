@@ -4,6 +4,5 @@
   "description": "No id provided",
   "category": "ELECTRONICS",
   "unit": "PIECE",
-  "price": 19.90,
-  "tenantId": "Event-tenant"
+  "price": 19.90
 }
