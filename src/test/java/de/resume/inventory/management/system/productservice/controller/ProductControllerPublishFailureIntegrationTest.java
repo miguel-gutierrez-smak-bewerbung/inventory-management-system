@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.resume.inventory.management.system.productservice.config.TestContainerConfiguration;
 import de.resume.inventory.management.system.productservice.models.events.ProductDeletedEvent;
 import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,23 +46,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class ProductControllerPublishFailureIntegrationTest {
 
-    private static final String EXPECTED_TOPIC_UPSERT = "product-upsert-test";
-    private static final String EXPECTED_TOPIC_FAIL = "product-upsert-fail-test";
-    private static final String EXPECTED_TOPIC_RETRY_FAIL = "product-upsert-retry-fail-test";
-
     @DynamicPropertySource
     static void registerKafkaTopics(final DynamicPropertyRegistry registry) {
-        registry.add("product.kafka.topic.upsert", () -> EXPECTED_TOPIC_UPSERT);
-        registry.add("product.kafka.topic.delete", () -> "product-delete-test");
-        registry.add("product.kafka.topic.upsert.failed", () -> EXPECTED_TOPIC_FAIL);
-        registry.add("product.kafka.topic.delete.failed", () -> "product-delete-fail-test");
-        registry.add("product.kafka.topic.upsert.retry-fail", () -> EXPECTED_TOPIC_RETRY_FAIL);
+        registry.add("topics.productUpsert", () -> "product-upsert-test");
+        registry.add("topics.productDelete", () -> "product-delete-test");
+        registry.add("topics.productUpsertFail", () -> "product-upsert-fail-test");
+        registry.add("topics.productDeleteFail", () -> "product-delete-fail-test");
+        registry.add("topics.productUpsertRetryFail", () -> "product-upsert-retry-fail-test");
+        registry.add("topics.productDeleteRetryFail", () -> "product-delete-retry-fail-test");
     }
 
-    @Autowired 
+    @Autowired
     private MockMvc mockMvc;
-    
-    @Autowired 
+
+    @Autowired
     private KafkaProducer<String, ProductUpsertedEvent> upsertKafkaProducer;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -75,9 +71,14 @@ class ProductControllerPublishFailureIntegrationTest {
 
     @Test
     void upsert_nonRetryableException_shouldSendToFailTopic() throws Exception {
-        doThrow(new KafkaException("non-retryable")).when(upsertKafkaProducer).send(any(ProducerRecord.class));
+        final String mainTopic = "product-upsert-test";
 
-        final String body = uniqueCreateJson(readResource("/json/product-create.json"));
+        Mockito.doThrow(new org.apache.kafka.common.KafkaException("non-retryable"))
+                .when(upsertKafkaProducer)
+                .send(Mockito.argThat((ProducerRecord<String, ProductUpsertedEvent> r) -> mainTopic.equals(r.topic())),
+                        any(Callback.class));
+
+        final String body = uniqueCreateJson(readResource());
 
         mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -85,25 +86,26 @@ class ProductControllerPublishFailureIntegrationTest {
                 .andExpect(status().isCreated());
 
         final ArgumentCaptor<ProducerRecord<String, ProductUpsertedEvent>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
-        verify(upsertKafkaProducer, times(3)).send(captor.capture());
-        verify(upsertKafkaProducer, times(3)).send(any(ProducerRecord.class));
+        verify(upsertKafkaProducer, times(2)).send(captor.capture(), any(Callback.class));
 
-        assertThat(captor.getAllValues()).isNotEmpty();
+        assertThat(captor.getAllValues()).hasSize(2);
     }
 
     @Test
     void upsert_retryable_then_retryFails_shouldSendToRetryThenFailTopic() throws Exception {
-        doThrow(new TimeoutException("retryable")).doThrow(new KafkaException("retry failed"))
-                .when(upsertKafkaProducer).send(any(ProducerRecord.class));
+        Mockito.doThrow(new TimeoutException("retryable"))
+                .doThrow(new org.apache.kafka.common.KafkaException("retry failed"))
+                .when(upsertKafkaProducer)
+                .send(any(ProducerRecord.class), any(Callback.class));
 
-        final String body = uniqueCreateJson(readResource("/json/product-create.json"));
+        final String body = uniqueCreateJson(readResource());
 
         mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated());
 
-        verify(upsertKafkaProducer, times(3)).send(any(ProducerRecord.class));
+        verify(upsertKafkaProducer, times(3)).send(any(ProducerRecord.class), any(Callback.class));
     }
 
     @TestConfiguration
@@ -122,9 +124,9 @@ class ProductControllerPublishFailureIntegrationTest {
         }
     }
 
-    private String readResource(final String path) throws Exception {
-        try (final var is = getClass().getResourceAsStream(path)) {
-            if (is == null) throw new IllegalArgumentException("Resource not found: " + path);
+    private String readResource() throws Exception {
+        try (final var is = getClass().getResourceAsStream("/json/product-create.json")) {
+            if (is == null) throw new IllegalArgumentException("Resource not found: " + "/json/product-create.json");
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
