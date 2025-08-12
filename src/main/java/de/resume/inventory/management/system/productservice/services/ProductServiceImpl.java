@@ -10,7 +10,7 @@ import de.resume.inventory.management.system.productservice.models.enums.Product
 import de.resume.inventory.management.system.productservice.models.events.ProductDeletedEvent;
 import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
 import de.resume.inventory.management.system.productservice.repositories.ProductRepository;
-import de.resume.inventory.management.system.productservice.services.publisher.ProductEventPublisher;
+import de.resume.inventory.management.system.productservice.services.publisher.DomainEventPublisher;
 import de.resume.inventory.management.system.productservice.services.resolver.EventKeyResolver;
 import de.resume.inventory.management.system.productservice.services.validation.ProductValidationService;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,8 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final ProductValidationService productValidationService;
-    private final ProductEventPublisher productEventPublisher;
+    private final DomainEventPublisher<ProductUpsertedEvent> upsertEventPublisher;
+    private final DomainEventPublisher<ProductDeletedEvent> deleteEventPublisher;
     private final ProductMapper productMapper;
     private final EventKeyResolver eventKeyResolver;
     private final ProductHistoryService productHistoryService;
@@ -52,11 +53,12 @@ public class ProductServiceImpl implements ProductService {
         productHistoryService.saveProductHistory(savedProduct, ProductAction.CREATED, tenantId);
         log.info("Persisted product with ID: {}", savedProduct.getId());
 
-        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, ProductAction.CREATED, tenantId);
+        final ProductUpsertedEvent productUpsertedEvent =
+                productMapper.toEvent(savedProduct, ProductAction.CREATED, tenantId);
         final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, savedProduct.getId());
         log.info("Publishing ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
 
-        productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
+        upsertEventPublisher.publish(kafkaKey, productUpsertedEvent);
         log.info("Published ProductUpsertedEvent for kafkaKey: {}", kafkaKey);
         return productMapper.toDomain(savedProduct);
     }
@@ -81,9 +83,10 @@ public class ProductServiceImpl implements ProductService {
         final ProductAction productAction = exists ? ProductAction.UPDATED : ProductAction.CREATED;
         productHistoryService.saveProductHistory(savedProduct, productAction, tenantId);
 
-        final ProductUpsertedEvent productUpsertedEvent = productMapper.toEvent(savedProduct, productAction, tenantId);
+        final ProductUpsertedEvent productUpsertedEvent =
+                productMapper.toEvent(savedProduct, productAction, tenantId);
         final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, savedProduct.getId());
-        productEventPublisher.publishProductUpserted(kafkaKey, productUpsertedEvent);
+        upsertEventPublisher.publish(kafkaKey, productUpsertedEvent);
 
         log.info("Persisted product with ID: {} and published {} event", savedProduct.getId(), productAction);
         return productMapper.toDomain(savedProduct);
@@ -96,19 +99,20 @@ public class ProductServiceImpl implements ProductService {
             throw new IllegalArgumentException("Product ID must not be null or blank");
         }
 
-       log.info("Deleting product with ID: {}", id);
+        log.info("Deleting product with ID: {}", id);
         final ProductEntity productEntity = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
 
-       productHistoryService.saveProductHistory(productEntity, ProductAction.DELETED, tenantId);
-       productRepository.deleteById(productEntity.getId());
+        productHistoryService.saveProductHistory(productEntity, ProductAction.DELETED, tenantId);
+        productRepository.deleteById(productEntity.getId());
 
-       log.info("Deleted product with ID: {}", productEntity.getId());
+        log.info("Deleted product with ID: {}", productEntity.getId());
 
-       final ProductDeletedEvent productDeletedEvent = new ProductDeletedEvent(id, LocalDateTime.now(), ProductAction.DELETED, tenantId);
-       final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, id);
-       productEventPublisher.publishProductDeleted(kafkaKey, productDeletedEvent);
-       log.info("Published ProductDeletedEvent for kafkaKey: {}", kafkaKey);
+        final ProductDeletedEvent productDeletedEvent =
+                new ProductDeletedEvent(id, LocalDateTime.now(), ProductAction.DELETED, tenantId);
+        final String kafkaKey = eventKeyResolver.resolveProductKey(tenantId, id);
+        deleteEventPublisher.publish(kafkaKey, productDeletedEvent);
+        log.info("Published ProductDeletedEvent for kafkaKey: {}", kafkaKey);
     }
 
     @Override

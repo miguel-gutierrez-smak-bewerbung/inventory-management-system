@@ -13,5 +13,7 @@ public class TopicConfiguration {
     private String productUpsert;
     private String productDelete;
     private String productUpsertFail;
+    private String productDeleteFail;
     private String productUpsertRetryFail;
+    private String productDeleteRetryFail;
 }
