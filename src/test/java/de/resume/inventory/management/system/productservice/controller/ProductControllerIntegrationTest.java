@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.resume.inventory.management.system.productservice.config.TestContainerConfiguration;
 import de.resume.inventory.management.system.productservice.config.TestEventPublisherConfig;
 import de.resume.inventory.management.system.productservice.config.TestEventPublisherConfig.RecordingProductEventPublisher;
-import de.resume.inventory.management.system.productservice.config.TestEventPublisherConfig.RecordingProductEventPublisher.SentDelete;
-import de.resume.inventory.management.system.productservice.config.TestEventPublisherConfig.RecordingProductEventPublisher.SentUpsert;
+import de.resume.inventory.management.system.productservice.config.TestEventPublisherConfig.SentDelete;
+import de.resume.inventory.management.system.productservice.config.TestEventPublisherConfig.SentUpsert;
 import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,14 +43,19 @@ class ProductControllerIntegrationTest {
 
     @DynamicPropertySource
     static void registerKafkaTopics(final DynamicPropertyRegistry registry) {
-        registry.add("product.kafka.topic.upsert", () -> "product-upsert-test");
-        registry.add("product.kafka.topic.delete", () -> "product-delete-test");
-        registry.add("product.kafka.topic.upsert.failed", () -> "product-upsert-fail-test");
-        registry.add("product.kafka.topic.delete.failed", () -> "product-delete-fail-test");
+        registry.add("topics.productUpsert", () -> "product-upsert-test");
+        registry.add("topics.productDelete", () -> "product-delete-test");
+        registry.add("topics.productUpsertFail", () -> "product-upsert-fail-test");
+        registry.add("topics.productDeleteFail", () -> "product-delete-fail-test");
+        registry.add("topics.productUpsertRetryFail", () -> "product-upsert-retry-test");
+        registry.add("topics.productDeleteRetryFail", () -> "product-delete-retry-test");
     }
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private RecordingProductEventPublisher recordingPublisher;
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private RecordingProductEventPublisher recordingPublisher;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -61,112 +66,111 @@ class ProductControllerIntegrationTest {
 
     @Test
     void createProduct_shouldPersistAndSendEvent() throws Exception {
-        final String body = uniqueCreateJson(readResource("/json/product-create.json"));
+        final String requestBody = uniqueCreateJson(readResource("/json/product-create.json"));
 
-        final String json = mockMvc.perform(post("/api/products")
+        final String responseJson = mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(requestBody))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        final String id = extractId(json);
-        assertThat(id).isNotBlank();
+        final String createdId = extractId(responseJson);
+        assertThat(createdId).isNotBlank();
 
         Awaitility.await().atMost(Duration.ofSeconds(5))
                 .untilAsserted(() -> assertThat(recordingPublisher.upsertHistory()).hasSize(1));
 
-        final SentUpsert sent = recordingPublisher.upsertHistory().get(0);
-        final ProductUpsertedEvent event = sent.event();
+        final SentUpsert sentUpsert = recordingPublisher.upsertHistory().getFirst();
+        final ProductUpsertedEvent publishedEvent = sentUpsert.event();
 
-        assertThat(sent.kafkaKey()).isNotBlank();
-        assertThat(event.name()).contains("IntegrationTest Product");
-        assertThat(event.articleNumber()).startsWith("Art-");
+        assertThat(sentUpsert.kafkaKey()).isNotBlank();
+        assertThat(publishedEvent.name()).contains("IntegrationTest Product");
+        assertThat(publishedEvent.articleNumber()).startsWith("Art-");
     }
 
     @Test
     void updateProduct_shouldPersistAndSendEvent() throws Exception {
-        final String createBody = uniqueCreateJson(readResource("/json/product-create.json"));
+        final String createRequestBody = uniqueCreateJson(readResource("/json/product-create.json"));
         final String createdJson = mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(createBody))
+                        .content(createRequestBody))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        final String id = extractId(createdJson);
-        assertThat(id).isNotBlank();
+        final String createdId = extractId(createdJson);
+        assertThat(createdId).isNotBlank();
 
         recordingPublisher.clearAll();
 
-        String updateBody = readResource("/json/product-update.json");
-        updateBody = updateBody.replace("${ID}", id);
-        updateBody = uniqueUpdateJson(updateBody);
+        String updateRequestBody = readResource("/json/product-update.json");
+        updateRequestBody = updateRequestBody.replace("${ID}", createdId);
+        updateRequestBody = uniqueUpdateJson(updateRequestBody);
 
         final String updatedJson = mockMvc.perform(put("/api/products/update")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(updateBody))
+                        .content(updateRequestBody))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
         final String updatedId = extractId(updatedJson);
-        assertThat(updatedId).isEqualTo(id);
+        assertThat(updatedId).isEqualTo(createdId);
 
         Awaitility.await().atMost(Duration.ofSeconds(5))
                 .untilAsserted(() -> assertThat(recordingPublisher.upsertHistory()).hasSize(1));
 
-        final SentUpsert sent = recordingPublisher.upsertHistory().get(0);
-        assertThat(sent.kafkaKey()).isNotBlank();
-        assertThat(sent.event().id()).isEqualTo(id);
+        final SentUpsert sentUpsert = recordingPublisher.upsertHistory().getFirst();
+        assertThat(sentUpsert.kafkaKey()).isNotBlank();
+        assertThat(sentUpsert.event().id()).isEqualTo(createdId);
     }
 
     @Test
     void deleteProduct_shouldDeleteAndSendEvent() throws Exception {
-        final String createBody = uniqueCreateJson(readResource("/json/product-create.json"));
+        final String createRequestBody = uniqueCreateJson(readResource("/json/product-create.json"));
         final String createdJson = mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(createBody))
+                        .content(createRequestBody))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        final String id = extractId(createdJson);
-        assertThat(id).isNotBlank();
+
+        final String createdId = extractId(createdJson);
+        assertThat(createdId).isNotBlank();
 
         recordingPublisher.clearAll();
 
-        mockMvc.perform(delete("/api/products/{id}", id))
+        mockMvc.perform(delete("/api/products/{id}", createdId))
                 .andExpect(status().isNoContent());
 
         Awaitility.await().atMost(Duration.ofSeconds(5))
                 .untilAsserted(() -> assertThat(recordingPublisher.deleteHistory()).hasSize(1));
 
-        final SentDelete sent = recordingPublisher.deleteHistory().get(0);
-        assertThat(sent.kafkaKey()).contains(id);
-        assertThat(sent.event().productAction().name()).isEqualTo("DELETED");
+        final SentDelete sentDelete = recordingPublisher.deleteHistory().getFirst();
+        assertThat(sentDelete.kafkaKey()).contains(createdId);
+        assertThat(sentDelete.event().productAction().name()).isEqualTo("DELETED");
     }
 
     @Test
     void createProduct_invalidEnum_shouldReturn400_noEvent() throws Exception {
-        final String body = readResource("/json/product-create-invalid-enum.json");
+        final String invalidRequestBody = readResource("/json/product-create-invalid-enum.json");
 
         mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(invalidRequestBody))
                 .andExpect(status().isBadRequest());
 
         assertThat(recordingPublisher.upsertHistory()).isEmpty();
-        assertThat(recordingPublisher.upsertFailedHistory()).isEmpty();
         assertThat(recordingPublisher.deleteHistory()).isEmpty();
     }
 
     @Test
     void updateProduct_missingId_shouldReturn400_noEvent() throws Exception {
-        final String body = readResource("/json/product-update-missing-id.json");
+        final String invalidRequestBody = readResource("/json/product-update-missing-id.json");
 
         mockMvc.perform(put("/api/products/update")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(invalidRequestBody))
                 .andExpect(status().isBadRequest());
 
         assertThat(recordingPublisher.upsertHistory()).isEmpty();
-        assertThat(recordingPublisher.upsertFailedHistory()).isEmpty();
         assertThat(recordingPublisher.deleteHistory()).isEmpty();
     }
 
@@ -178,18 +182,20 @@ class ProductControllerIntegrationTest {
                 .andExpect(status().isNotFound());
 
         assertThat(recordingPublisher.deleteHistory()).isEmpty();
+        assertThat(recordingPublisher.upsertHistory()).isEmpty();
     }
 
     @Test
     void createProduct_malformedJson_shouldReturn400_noEvent() throws Exception {
-        final String malformed = "{ \"name\": \"X\", ";
+        final String malformedBody = "{ \"name\": \"X\", ";
 
         mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(malformed))
+                        .content(malformedBody))
                 .andExpect(status().isBadRequest());
 
         assertThat(recordingPublisher.upsertHistory()).isEmpty();
+        assertThat(recordingPublisher.deleteHistory()).isEmpty();
     }
 
     @Test
@@ -199,16 +205,16 @@ class ProductControllerIntegrationTest {
     }
 
     private String readResource(final String path) throws Exception {
-        try (final var is = getClass().getResourceAsStream(path)) {
-            if (is == null) {
+        try (final var inputStream = getClass().getResourceAsStream(path)) {
+            if (inputStream == null) {
                 throw new IllegalArgumentException("Resource not found: " + path);
             }
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
 
     private String extractId(final String json) throws Exception {
-        final var map = objectMapper.readValue(json, Map.class);
+        final Map<String, Object> map = objectMapper.readValue(json, new TypeReference<>() {});
         final Object id = map.get("id");
         return id == null ? "" : String.valueOf(id);
     }
@@ -233,7 +239,9 @@ class ProductControllerIntegrationTest {
     }
 
     private String trimToMax(final String value, final int max) {
-        if (value == null) return null;
+        if (value == null) {
+            return null;
+        }
         return value.length() <= max ? value : value.substring(0, max);
     }
 }

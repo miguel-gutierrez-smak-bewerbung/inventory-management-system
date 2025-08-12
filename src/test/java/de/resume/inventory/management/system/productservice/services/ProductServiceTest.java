@@ -12,22 +12,16 @@ import de.resume.inventory.management.system.productservice.models.enums.Unit;
 import de.resume.inventory.management.system.productservice.models.events.ProductDeletedEvent;
 import de.resume.inventory.management.system.productservice.models.events.ProductUpsertedEvent;
 import de.resume.inventory.management.system.productservice.repositories.ProductRepository;
-import de.resume.inventory.management.system.productservice.services.publisher.ProductEventPublisher;
+import de.resume.inventory.management.system.productservice.services.publisher.DomainEventPublisher;
 import de.resume.inventory.management.system.productservice.services.resolver.EventKeyResolver;
 import de.resume.inventory.management.system.productservice.services.validation.ProductValidationService;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -37,31 +31,28 @@ import java.util.Optional;
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
 
-    @Mock
-    private ProductRepository productRepository;
+    @Mock private ProductRepository productRepository;
+    @Mock private ProductValidationService productValidationService;
+    @Mock private DomainEventPublisher<ProductUpsertedEvent> upsertEventPublisher;
+    @Mock private DomainEventPublisher<ProductDeletedEvent> deleteEventPublisher;
+    @Mock private ProductMapper productMapper;
+    @Mock private EventKeyResolver eventKeyResolver;
+    @Mock private ProductHistoryService productHistoryService;
 
-    @Mock
-    private ProductValidationService productValidationService;
-
-    @Mock
-    private ProductEventPublisher productEventPublisher;
-
-    @Mock
-    private ProductMapper productMapper;
-
-    @Mock
-    private EventKeyResolver eventKeyResolver;
-
-    @Mock
-    private ProductHistoryService productHistoryService;
-
-    @InjectMocks
-    private ProductServiceImpl productService;
+    private ProductServiceImpl sut;
 
     @BeforeEach
-    void injectTenantIdentifier() {
-        final String configuredTenantIdentifier = "Event-tenant";
-        ReflectionTestUtils.setField(productService, "tenantId", configuredTenantIdentifier);
+    void setUp() {
+        sut = new ProductServiceImpl(
+                productRepository,
+                productValidationService,
+                upsertEventPublisher,
+                deleteEventPublisher,
+                productMapper,
+                eventKeyResolver,
+                productHistoryService
+        );
+        ReflectionTestUtils.setField(sut, "tenantId", "Event-tenant");
     }
 
     @Test
@@ -73,69 +64,41 @@ class ProductServiceTest {
         final Category productCategory = Category.TOYS;
         final Unit productUnit = Unit.PIECE;
         final double productPrice = 79.90;
-
         final ProductToCreateDto productToCreateDto = new ProductToCreateDto(
-                productName,
-                productArticleNumber,
-                productDescription,
-                productCategory,
-                productUnit,
-                productPrice
+                productName, productArticleNumber, productDescription, productCategory, productUnit, productPrice
         );
-
         final ProductEntity mappedProductEntity = new ProductEntity(
-                productName,
-                productArticleNumber,
-                productDescription,
-                productCategory,
-                productUnit,
-                BigDecimal.valueOf(productPrice)
+                productName, productArticleNumber, productDescription, productCategory, productUnit, BigDecimal.valueOf(productPrice)
         );
-
         final String persistedProductIdentifier = "product-1000";
         final LocalDateTime persistedUpdatedAt = LocalDateTime.of(2025, 1, 10, 12, 0);
         final ProductEntity persistedProductEntity = new ProductEntity(
-                productName,
-                productArticleNumber,
-                productDescription,
-                productCategory,
-                productUnit,
-                BigDecimal.valueOf(productPrice)
+                productName, productArticleNumber, productDescription, productCategory, productUnit, BigDecimal.valueOf(productPrice)
         );
         persistedProductEntity.setId(persistedProductIdentifier);
         persistedProductEntity.setUpdatedAt(persistedUpdatedAt);
-
-        final ProductUpsertedEvent productUpsertedEvent = new ProductUpsertedEvent(
-                persistedProductIdentifier,
-                productName,
-                productArticleNumber,
-                productCategory.name(),
-                productUnit.name(),
-                productPrice,
-                productDescription,
-                persistedUpdatedAt,
-                ProductAction.CREATED,
-                tenantIdentifier
+        final ProductUpsertedEvent expectedUpsertedEvent = new ProductUpsertedEvent(
+                persistedProductIdentifier, productName, productArticleNumber, productCategory.name(),
+                productUnit.name(), productPrice, productDescription, persistedUpdatedAt, ProductAction.CREATED, tenantIdentifier
         );
         final String expectedKafkaKey = tenantIdentifier + "-" + persistedProductIdentifier;
+        final Product expectedDomainProduct = Mockito.mock(Product.class);
 
         Mockito.when(productMapper.toEntity(productToCreateDto)).thenReturn(mappedProductEntity);
         Mockito.when(productRepository.save(mappedProductEntity)).thenReturn(persistedProductEntity);
-        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier)).thenReturn(productUpsertedEvent);
+        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier)).thenReturn(expectedUpsertedEvent);
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, persistedProductIdentifier)).thenReturn(expectedKafkaKey);
-
-        final Product expectedDomainProduct = Mockito.mock(Product.class);
         Mockito.when(productMapper.toDomain(persistedProductEntity)).thenReturn(expectedDomainProduct);
 
-        final Product actual = productService.createProduct(productToCreateDto);
-        Assertions.assertSame(expectedDomainProduct, actual);
+        final Product actual = sut.createProduct(productToCreateDto);
+        org.junit.jupiter.api.Assertions.assertSame(expectedDomainProduct, actual);
 
         Mockito.verify(productValidationService).validateProductToCreate(productToCreateDto);
         Mockito.verify(productMapper).toEntity(productToCreateDto);
         Mockito.verify(productRepository).save(mappedProductEntity);
         Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, persistedProductIdentifier);
-        Mockito.verify(productEventPublisher).publishProductUpserted(expectedKafkaKey, productUpsertedEvent);
+        Mockito.verify(upsertEventPublisher).publish(expectedKafkaKey, expectedUpsertedEvent);
         Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
     }
 
@@ -149,70 +112,42 @@ class ProductServiceTest {
         final Category productCategory = Category.HOUSEHOLD;
         final Unit productUnit = Unit.PIECE;
         final double productPrice = 49.50;
-
         final ProductToUpdateDto productToUpdateDto = new ProductToUpdateDto(
-                incomingProductIdentifier,
-                productName,
-                productArticleNumber,
-                productDescription,
-                productCategory,
-                productUnit,
-                productPrice
+                incomingProductIdentifier, productName, productArticleNumber, productDescription, productCategory, productUnit, productPrice
         );
         final ProductEntity mappedProductEntity = new ProductEntity(
-                productName,
-                productArticleNumber,
-                productDescription,
-                productCategory,
-                productUnit,
-                BigDecimal.valueOf(productPrice)
+                productName, productArticleNumber, productDescription, productCategory, productUnit, BigDecimal.valueOf(productPrice)
         );
         mappedProductEntity.setId(incomingProductIdentifier);
-
         final ProductEntity persistedProductEntity = new ProductEntity(
-                productName,
-                productArticleNumber,
-                productDescription,
-                productCategory,
-                productUnit,
-                BigDecimal.valueOf(productPrice)
+                productName, productArticleNumber, productDescription, productCategory, productUnit, BigDecimal.valueOf(productPrice)
         );
         persistedProductEntity.setId(incomingProductIdentifier);
         final LocalDateTime persistedUpdatedAt = LocalDateTime.of(2025, 2, 5, 9, 30);
         persistedProductEntity.setUpdatedAt(persistedUpdatedAt);
-
-        final ProductUpsertedEvent expectedProductUpsertedEvent = new ProductUpsertedEvent(
-                incomingProductIdentifier,
-                productName,
-                productArticleNumber,
-                productCategory.name(),
-                productUnit.name(),
-                productPrice,
-                productDescription,
-                persistedUpdatedAt,
-                ProductAction.UPDATED,
-                tenantIdentifier
+        final ProductUpsertedEvent expectedUpsertedEvent = new ProductUpsertedEvent(
+                incomingProductIdentifier, productName, productArticleNumber, productCategory.name(),
+                productUnit.name(), productPrice, productDescription, persistedUpdatedAt, ProductAction.UPDATED, tenantIdentifier
         );
         final String expectedKafkaKey = tenantIdentifier + "-" + incomingProductIdentifier;
+        final Product expectedDomainProduct = Mockito.mock(Product.class);
 
         Mockito.when(productMapper.toEntity(productToUpdateDto)).thenReturn(mappedProductEntity);
         Mockito.when(productRepository.existsById(incomingProductIdentifier)).thenReturn(true);
         Mockito.when(productRepository.save(mappedProductEntity)).thenReturn(persistedProductEntity);
-        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.UPDATED, tenantIdentifier)).thenReturn(expectedProductUpsertedEvent);
+        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.UPDATED, tenantIdentifier)).thenReturn(expectedUpsertedEvent);
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, incomingProductIdentifier)).thenReturn(expectedKafkaKey);
-
-        final Product expectedDomainProduct = Mockito.mock(Product.class);
         Mockito.when(productMapper.toDomain(persistedProductEntity)).thenReturn(expectedDomainProduct);
 
-        final Product actual = productService.updateProduct(productToUpdateDto);
-        Assertions.assertSame(expectedDomainProduct, actual);
+        final Product actual = sut.updateProduct(productToUpdateDto);
+        org.junit.jupiter.api.Assertions.assertSame(expectedDomainProduct, actual);
 
         Mockito.verify(productValidationService).validateProductToUpdate(productToUpdateDto);
         Mockito.verify(productRepository).existsById(incomingProductIdentifier);
         Mockito.verify(productRepository).save(mappedProductEntity);
         Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.UPDATED, tenantIdentifier);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, incomingProductIdentifier);
-        Mockito.verify(productEventPublisher).publishProductUpserted(expectedKafkaKey, expectedProductUpsertedEvent);
+        Mockito.verify(upsertEventPublisher).publish(expectedKafkaKey, expectedUpsertedEvent);
         Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.UPDATED, tenantIdentifier);
     }
 
@@ -259,7 +194,7 @@ class ProductServiceTest {
         final LocalDateTime persistedUpdatedAt = LocalDateTime.of(2025, 3, 15, 8, 0);
         persistedProductEntity.setUpdatedAt(persistedUpdatedAt);
 
-        final ProductUpsertedEvent expectedProductUpsertedEvent = new ProductUpsertedEvent(
+        final ProductUpsertedEvent expectedUpsertedEvent = new ProductUpsertedEvent(
                 newPersistedProductIdentifier,
                 productName,
                 productArticleNumber,
@@ -276,21 +211,31 @@ class ProductServiceTest {
         Mockito.when(productMapper.toEntity(productToUpdateDto)).thenReturn(mappedProductEntity);
         Mockito.when(productRepository.existsById(incomingProductIdentifier)).thenReturn(false);
         Mockito.when(productRepository.save(mappedProductEntity)).thenReturn(persistedProductEntity);
-        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier)).thenReturn(expectedProductUpsertedEvent);
+        Mockito.when(productMapper.toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier)).thenReturn(expectedUpsertedEvent);
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, newPersistedProductIdentifier)).thenReturn(expectedKafkaKey);
 
         final Product expectedDomainProduct = Mockito.mock(Product.class);
         Mockito.when(productMapper.toDomain(persistedProductEntity)).thenReturn(expectedDomainProduct);
 
-        final Product actual = productService.updateProduct(productToUpdateDto);
-        Assertions.assertSame(expectedDomainProduct, actual);
+        final Product actual = sut.updateProduct(productToUpdateDto);
+        org.junit.jupiter.api.Assertions.assertSame(expectedDomainProduct, actual);
 
         Mockito.verify(productValidationService).validateProductToUpdate(productToUpdateDto);
         Mockito.verify(productRepository).existsById(incomingProductIdentifier);
         Mockito.verify(productRepository).save(mappedProductEntity);
         Mockito.verify(productMapper).toEvent(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, newPersistedProductIdentifier);
-        Mockito.verify(productEventPublisher).publishProductUpserted(expectedKafkaKey, expectedProductUpsertedEvent);
+
+        final ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+        final ArgumentCaptor<ProductUpsertedEvent> eventCaptor = ArgumentCaptor.forClass(ProductUpsertedEvent.class);
+        Mockito.verify(upsertEventPublisher).publish(keyCaptor.capture(), eventCaptor.capture());
+
+        final String actualKafkaKey = keyCaptor.getValue();
+        final ProductUpsertedEvent actualEvent = eventCaptor.getValue();
+
+        org.junit.jupiter.api.Assertions.assertEquals(expectedKafkaKey, actualKafkaKey);
+        org.junit.jupiter.api.Assertions.assertEquals(expectedUpsertedEvent, actualEvent);
+
         Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.CREATED, tenantIdentifier);
     }
 
@@ -299,30 +244,32 @@ class ProductServiceTest {
         final String tenantIdentifier = "Event-tenant";
         final String productIdentifier = "product-4000";
         final String expectedKafkaKey = tenantIdentifier + "-" + productIdentifier;
-
-        final ProductEntity entity = new ProductEntity(
-                "Any",
-                "ANY-1",
-                "desc",
-                Category.TOYS,
-                Unit.PIECE,
-                BigDecimal.ONE
+        final ProductEntity persistedProductEntity = new ProductEntity(
+                "Any", "ANY-1", "desc", Category.TOYS, Unit.PIECE, BigDecimal.ONE
         );
-        entity.setId(productIdentifier);
+        persistedProductEntity.setId(productIdentifier);
 
-        Mockito.when(productRepository.findById(productIdentifier)).thenReturn(Optional.of(entity));
+        Mockito.when(productRepository.findById(productIdentifier)).thenReturn(Optional.of(persistedProductEntity));
         Mockito.when(eventKeyResolver.resolveProductKey(tenantIdentifier, productIdentifier)).thenReturn(expectedKafkaKey);
 
-        productService.deleteProduct(productIdentifier);
+        sut.deleteProduct(productIdentifier);
 
+        final ArgumentCaptor<ProductDeletedEvent> eventCaptor = ArgumentCaptor.forClass(ProductDeletedEvent.class);
         Mockito.verify(productRepository).findById(productIdentifier);
-        Mockito.verify(productHistoryService).saveProductHistory(entity, ProductAction.DELETED, tenantIdentifier);
+        Mockito.verify(productHistoryService).saveProductHistory(persistedProductEntity, ProductAction.DELETED, tenantIdentifier);
         Mockito.verify(productRepository).deleteById(productIdentifier);
         Mockito.verify(eventKeyResolver).resolveProductKey(tenantIdentifier, productIdentifier);
-        Mockito.verify(productEventPublisher)
-                .publishProductDeleted(Mockito.eq(expectedKafkaKey), Mockito.any(ProductDeletedEvent.class));
-    }
+        Mockito.verify(deleteEventPublisher).publish(Mockito.eq(expectedKafkaKey), eventCaptor.capture());
 
+        final ProductDeletedEvent actualDeletedEvent = eventCaptor.getValue();
+        final ProductDeletedEvent expectedDeletedEvent = new ProductDeletedEvent(
+                productIdentifier,
+                actualDeletedEvent.timestamp(),
+                ProductAction.DELETED,
+                tenantIdentifier
+        );
+        org.junit.jupiter.api.Assertions.assertEquals(expectedDeletedEvent, actualDeletedEvent);
+    }
 
     @Test
     void deleteProduct_whenDoesNotExist_throwsProductNotFoundException() {
@@ -330,45 +277,27 @@ class ProductServiceTest {
 
         Mockito.when(productRepository.findById(productIdentifier)).thenReturn(Optional.empty());
 
-        Assertions.assertThrows(
-                ProductNotFoundException.class,
-                () -> productService.deleteProduct(productIdentifier)
-        );
+        org.junit.jupiter.api.Assertions.assertThrows(ProductNotFoundException.class, () -> sut.deleteProduct(productIdentifier));
 
         Mockito.verify(productRepository).findById(productIdentifier);
         Mockito.verify(productRepository, Mockito.never()).deleteById(Mockito.anyString());
-        Mockito.verify(productHistoryService, Mockito.never())
-                .saveProductHistory(Mockito.any(), Mockito.any(), Mockito.anyString());
-        Mockito.verify(productEventPublisher, Mockito.never())
-                .publishProductDeleted(Mockito.anyString(), Mockito.any());
+        Mockito.verify(productHistoryService, Mockito.never()).saveProductHistory(Mockito.any(), Mockito.any(), Mockito.anyString());
+        Mockito.verify(deleteEventPublisher, Mockito.never()).publish(Mockito.anyString(), Mockito.any());
+        Mockito.verify(upsertEventPublisher, Mockito.never()).publish(Mockito.anyString(), Mockito.any());
     }
 
     @Test
     void getAllProducts_returnsMappedPage() {
         final Pageable pageable = PageRequest.of(0, 2);
-
         final ProductEntity firstProductEntity = new ProductEntity(
-                "Fuse",
-                "FS-5x20",
-                "Time-delay fuse 5x20mm",
-                Category.ELECTRONICS,
-                Unit.PIECE,
-                BigDecimal.valueOf(0.49)
+                "Fuse", "FS-5x20", "Time-delay fuse 5x20mm", Category.ELECTRONICS, Unit.PIECE, BigDecimal.valueOf(0.49)
         );
         firstProductEntity.setId("product-6001");
-
         final ProductEntity secondProductEntity = new ProductEntity(
-                "Cable ties",
-                "CT-200",
-                "Cable ties 200mm black",
-                Category.HOUSEHOLD,
-                Unit.PACKAGE,
-                BigDecimal.valueOf(3.99)
+                "Cable ties", "CT-200", "Cable ties 200mm black", Category.HOUSEHOLD, Unit.PACKAGE, BigDecimal.valueOf(3.99)
         );
         secondProductEntity.setId("product-6002");
-
         final Page<ProductEntity> repositoryPage = new PageImpl<>(List.of(firstProductEntity, secondProductEntity), pageable, 2);
-
         final Product firstDomainProduct = Mockito.mock(Product.class);
         final Product secondDomainProduct = Mockito.mock(Product.class);
         final Page<Product> expectedPage = new PageImpl<>(List.of(firstDomainProduct, secondDomainProduct), pageable, 2);
@@ -377,34 +306,25 @@ class ProductServiceTest {
         Mockito.when(productMapper.toDomain(firstProductEntity)).thenReturn(firstDomainProduct);
         Mockito.when(productMapper.toDomain(secondProductEntity)).thenReturn(secondDomainProduct);
 
-        final Page<Product> actualPage = productService.getAllProducts(pageable);
-
-        Assertions.assertEquals(expectedPage, actualPage);
+        final Page<Product> actualPage = sut.getAllProducts(pageable);
+        org.junit.jupiter.api.Assertions.assertEquals(expectedPage, actualPage);
     }
 
     @Test
     void getProductById_whenFound_returnsDomain() {
         final String productIdentifier = "product-7000";
-
         final ProductEntity foundProductEntity = new ProductEntity(
-                "Spirit level",
-                "SL-40",
-                "Spirit level 40cm",
-                Category.HOUSEHOLD,
-                Unit.PIECE,
-                BigDecimal.valueOf(12.90)
+                "Spirit level", "SL-40", "Spirit level 40cm", Category.HOUSEHOLD, Unit.PIECE, BigDecimal.valueOf(12.90)
         );
         foundProductEntity.setId(productIdentifier);
-
         final Product expectedDomainProduct = Mockito.mock(Product.class);
         final Optional<Product> expectedOptional = Optional.of(expectedDomainProduct);
 
         Mockito.when(productRepository.findById(productIdentifier)).thenReturn(Optional.of(foundProductEntity));
         Mockito.when(productMapper.toDomain(foundProductEntity)).thenReturn(expectedDomainProduct);
 
-        final Optional<Product> actualOptional = productService.getProductById(productIdentifier);
-
-        Assertions.assertEquals(expectedOptional, actualOptional);
+        final Optional<Product> actualOptional = sut.getProductById(productIdentifier);
+        org.junit.jupiter.api.Assertions.assertEquals(expectedOptional, actualOptional);
     }
 
     @Test
@@ -414,8 +334,7 @@ class ProductServiceTest {
 
         Mockito.when(productRepository.findById(productIdentifier)).thenReturn(Optional.empty());
 
-        final Optional<Product> actualOptional = productService.getProductById(productIdentifier);
-
-        Assertions.assertEquals(expectedOptional, actualOptional);
+        final Optional<Product> actualOptional = sut.getProductById(productIdentifier);
+        org.junit.jupiter.api.Assertions.assertEquals(expectedOptional, actualOptional);
     }
 }
