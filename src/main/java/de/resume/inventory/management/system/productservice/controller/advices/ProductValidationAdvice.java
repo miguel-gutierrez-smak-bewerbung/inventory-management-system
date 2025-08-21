@@ -1,6 +1,8 @@
-package de.resume.inventory.management.system.productservice.services.advices;
+package de.resume.inventory.management.system.productservice.controller.advices;
 
+import de.resume.inventory.management.system.productservice.controller.ProductController;
 import de.resume.inventory.management.system.productservice.exceptions.ProductValidationException;
+import de.resume.inventory.management.system.productservice.services.advices.ProblemDetailService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +19,7 @@ import java.util.Optional;
 
 @Order(1)
 @RequiredArgsConstructor
-@ControllerAdvice(assignableTypes = de.resume.inventory.management.system.productservice.controller.ProductController.class)
+@ControllerAdvice(assignableTypes = ProductController.class)
 public class ProductValidationAdvice {
 
     private final ProblemDetailService problemDetailService;

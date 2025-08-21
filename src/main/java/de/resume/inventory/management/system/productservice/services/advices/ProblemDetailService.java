@@ -63,7 +63,7 @@ public class ProblemDetailService {
         }
 
         final ProblemDetail problemDetail = base(HttpStatus.BAD_REQUEST, "Invalid request body", "invalid-request-body");
-        final String detailMessage = Optional.ofNullable(exception.getMostSpecificCause())
+        final String detailMessage = Optional.of(exception.getMostSpecificCause())
                 .map(Throwable::getMessage)
                 .orElse(exception.getMessage());
         problemDetail.setDetail(detailMessage);
@@ -87,10 +87,8 @@ public class ProblemDetailService {
     public ProblemDetail buildDataIntegrityViolation(final org.springframework.dao.DataIntegrityViolationException exception) {
         final ProblemDetail problemDetail = base(HttpStatus.CONFLICT, "Data integrity violation", "conflict");
         problemDetail.setDetail("Unique or foreign key constraint violated.");
-        final String rootCauseMessage = Optional.ofNullable(exception.getRootCause()).map(Throwable::getMessage).orElse(null);
-        if (rootCauseMessage != null) {
-            problemDetail.setProperty("rootCause", rootCauseMessage);
-        }
+        Optional.ofNullable(exception.getRootCause()).map(Throwable::getMessage)
+                .ifPresent(rootCauseMessage -> problemDetail.setProperty("rootCause", rootCauseMessage));
         return problemDetail;
     }
 
